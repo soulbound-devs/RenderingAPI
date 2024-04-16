@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "net.vakror.item_rendering_api.itemrenderingapi.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "refmap": "ItemRenderingapi.refmap.json",
+  "mixins": [
+  ],
+  "client": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
