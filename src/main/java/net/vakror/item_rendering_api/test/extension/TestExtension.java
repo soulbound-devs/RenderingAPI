@@ -8,8 +8,8 @@ import net.vakror.item_rendering_api.core.api.AbstractItemRenderingAPILayer;
 import net.vakror.item_rendering_api.core.api.AbstractQuadProcessor;
 import net.vakror.item_rendering_api.core.api.IItemRenderingAPIModelReader;
 import net.vakror.item_rendering_api.core.api.ItemRenderingAPIQuadRenderData;
-import net.vakror.item_rendering_api.extension.context.ModelReaderRegistrationContext;
-import net.vakror.item_rendering_api.extension.impl.TextureRenderLayer;
+import net.vakror.item_rendering_api.core.extension.context.ModelReaderRegistrationContext;
+import net.vakror.item_rendering_api.impl.TextureRenderLayer;
 import net.vakror.registry.jamesregistryapi.api.AbstractExtension;
 
 import java.util.List;

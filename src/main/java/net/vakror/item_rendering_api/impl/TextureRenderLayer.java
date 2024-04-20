@@ -1,6 +1,5 @@
-package net.vakror.item_rendering_api.extension.impl;
+package net.vakror.item_rendering_api.impl;
 
-import com.google.common.collect.ImmutableList;
 import com.mojang.math.Transformation;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;

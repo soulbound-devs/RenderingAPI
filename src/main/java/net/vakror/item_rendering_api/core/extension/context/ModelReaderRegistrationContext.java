@@ -1,4 +1,4 @@
-package net.vakror.item_rendering_api.extension.context;
+package net.vakror.item_rendering_api.core.extension.context;
 
 import com.google.common.base.Stopwatch;
 import net.minecraft.resources.ResourceLocation;

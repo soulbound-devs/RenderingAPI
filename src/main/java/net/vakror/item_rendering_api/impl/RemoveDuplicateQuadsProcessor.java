@@ -1,4 +1,4 @@
-package net.vakror.item_rendering_api.extension.impl;
+package net.vakror.item_rendering_api.impl;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
