@@ -112,6 +112,10 @@ public class QuadMaker {
 
     /* Put data into the consumer */
     public static void putVertex(VertexConsumer consumer, Vec3 vec, double u, double v, TextureAtlasSprite sprite, Direction orientation, Vector4f color) {
+        if (sprite.contents().name().equals(new ResourceLocation(ItemRenderingAPI.MOD_ID, "item/white"))) {
+            u = 0;
+            v = 0;
+        }
         float fu = sprite.getU0() + (sprite.getU1() - sprite.getU0()) * (float)u / 16.0F;
         float fv = sprite.getV0() + (sprite.getV1() - sprite.getV0()) * (float)v / 16.0F;
 
