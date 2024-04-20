@@ -36,25 +36,25 @@ public class ModelUtils {
     }
 
     public static void genQuads(List<TextureAtlasSprite> sprites, List<BakedQuad> quads, Transformation transform, Function<Material, TextureAtlasSprite> spriteGetter) {
-        genQuads(sprites, quads, transform, false, spriteGetter, -1, null);
+        genQuads(sprites, quads, transform, false, spriteGetter, -1, null, 16);
     }
 
-    public static void genQuads(List<TextureAtlasSprite> sprites, List<BakedQuad> quads, Transformation transform, boolean blendQuads, Function<Material, TextureAtlasSprite> spriteGetter, int emissivity, Vector4f tintColor) {
-        addQuadsFromSprite(sprites, quads, transform, blendQuads, spriteGetter, emissivity, tintColor);
+    public static void genQuads(List<TextureAtlasSprite> sprites, List<BakedQuad> quads, Transformation transform, boolean blendQuads, Function<Material, TextureAtlasSprite> spriteGetter, int emissivity, Vector4f tintColor, int textureSize) {
+        addQuadsFromSprite(sprites, quads, transform, blendQuads, spriteGetter, emissivity, tintColor, textureSize);
     }
 
-    private static void addQuadsFromSprite(List<TextureAtlasSprite> sprites, List<BakedQuad> quads, Transformation transform, boolean blendQuads, Function<Material, TextureAtlasSprite> spriteGetter, int emissivity, Vector4f tintColor) {
+    private static void addQuadsFromSprite(List<TextureAtlasSprite> sprites, List<BakedQuad> quads, Transformation transform, boolean blendQuads, Function<Material, TextureAtlasSprite> spriteGetter, int emissivity, Vector4f tintColor, int textureSize) {
         List<BakedQuad> tempQuads = new ArrayList<>();
-        addQuads(sprites, tempQuads, transform, blendQuads, spriteGetter, emissivity, tintColor);
+        addQuads(sprites, tempQuads, transform, blendQuads, spriteGetter, tintColor, textureSize);
         if (emissivity >= 0 && emissivity <= 15) {
             QuadTransformers.settingEmissivity(emissivity).processInPlace(tempQuads);
         }
         quads.addAll(tempQuads);
     }
 
-    private static void addQuads(List<TextureAtlasSprite> sprites, List<BakedQuad> quads, Transformation transform, boolean blendQuads, Function<Material, TextureAtlasSprite> spriteGetter, int emissivity, Vector4f tintColor) {
-        for (int x = 0; x <= 15; x++) {
-            for (int y = 0; y <= 15; y++) {
+    private static void addQuads(List<TextureAtlasSprite> sprites, List<BakedQuad> quads, Transformation transform, boolean blendQuads, Function<Material, TextureAtlasSprite> spriteGetter, Vector4f tintColor, int textureSize) {
+        for (int x = 0; x <= textureSize - 1; x++) {
+            for (int y = 0; y <= textureSize - 1; y++) {
                 Vector4f blendCol = new Vector4f(0.0f, 0.0f, 0.0f, 0.0f);
                 int amountOfSpritesBlended = 0;
                 boolean doStuff = true;

@@ -19,6 +19,7 @@ public class TextureRenderLayer extends AbstractItemRenderingAPILayer {
     private final ResourceLocation[] textures;
     private boolean blendQuads = false;
     private int emissivity = -1;
+    private int textureSize = 16;
     private Vector4f tint = null;
 
     public TextureRenderLayer(ResourceLocation... textures) {
@@ -29,7 +30,7 @@ public class TextureRenderLayer extends AbstractItemRenderingAPILayer {
     public final void render(List<BakedQuad> quads, Transformation transformation, ItemRenderingAPIQuadRenderData data) {
         List<TextureAtlasSprite> sprites = new ArrayList<>();
         getAdditionalTextures(sprites, data);
-        ModelUtils.genQuads(sprites, quads, transformation, blendQuads, data.spriteGetter(), emissivity, tint);
+        ModelUtils.genQuads(sprites, quads, transformation, blendQuads, data.spriteGetter(), emissivity, tint, textureSize);
     }
 
     public void getAdditionalTextures(List<TextureAtlasSprite> sprites, ItemRenderingAPIQuadRenderData data) {
@@ -90,6 +91,11 @@ public class TextureRenderLayer extends AbstractItemRenderingAPILayer {
 
     public TextureRenderLayer withTint(Vector4f tint) {
         this.tint = tint;
+        return this;
+    }
+
+    public TextureRenderLayer withTextureSize(int textureSize) {
+        this.textureSize = textureSize;
         return this;
     }
 }
