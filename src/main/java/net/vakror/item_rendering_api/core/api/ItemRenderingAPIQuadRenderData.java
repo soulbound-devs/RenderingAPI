@@ -1,5 +1,6 @@
 package net.vakror.item_rendering_api.core.api;
 
+import com.mojang.math.Transformation;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.BakedModel;
@@ -22,5 +23,4 @@ import java.util.function.Function;
  * @param seed the seed number
  * @param spriteGetter a function to get {@link TextureAtlasSprite TextureAtlasSprites} from {@link ResourceLocation ResourceLocations}
  */
-public record ItemRenderingAPIQuadRenderData(BakedModel model, ItemStack stack, ClientLevel worldIn, @Nullable LivingEntity entityIn, int seed, Function<Material, TextureAtlasSprite> spriteGetter) {
-}
+public record ItemRenderingAPIQuadRenderData(BakedModel model, ItemStack stack, ClientLevel worldIn, @Nullable LivingEntity entityIn, int seed, Function<Material, TextureAtlasSprite> spriteGetter) {}

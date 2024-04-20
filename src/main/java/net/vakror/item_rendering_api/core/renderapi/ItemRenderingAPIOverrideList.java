@@ -1,5 +1,6 @@
 package net.vakror.item_rendering_api.core.renderapi;
 
+import com.mojang.math.Transformation;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.block.model.ItemOverrides;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -18,10 +19,12 @@ import java.util.function.Function;
 public class ItemRenderingAPIOverrideList extends ItemOverrides {
 	private final Function<Material, TextureAtlasSprite> spriteGetter;
 	private final List<Class<? extends Item>> itemClass;
+	private final Transformation transformation;
 
-	public ItemRenderingAPIOverrideList(Function<Material, TextureAtlasSprite> spriteGetterIn, List<Class<? extends Item>> itemclass) {
+	public ItemRenderingAPIOverrideList(Function<Material, TextureAtlasSprite> spriteGetterIn, List<Class<? extends Item>> itemclass, Transformation transformation) {
 		this.spriteGetter = spriteGetterIn;
 		this.itemClass = itemclass;
+		this.transformation = transformation;
 	}
 
 	@Override

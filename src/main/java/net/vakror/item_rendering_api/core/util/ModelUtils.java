@@ -1,21 +1,23 @@
 package net.vakror.item_rendering_api.core.util;
 
-import com.google.common.collect.ImmutableList;
-import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.math.Transformation;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.Material;
-import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.client.model.pipeline.QuadBakingVertexConsumer;
-import net.neoforged.neoforge.client.model.pipeline.TransformingVertexPipeline;
+import net.minecraft.util.ColorRGBA;
+import net.minecraft.util.FastColor;
+import net.neoforged.neoforge.client.model.QuadTransformers;
+import net.vakror.item_rendering_api.ItemRenderingAPI;
 import org.jetbrains.annotations.NotNull;
+import org.joml.Vector4f;
+import static net.vakror.item_rendering_api.core.util.QuadMaker.*;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
@@ -23,10 +25,6 @@ public class ModelUtils {
 
     public static float NORTH_Z = 7.496f / 16f;
     public static float SOUTH_Z = 8.504f / 16f;
-
-    public static float COLOR_R = 1.0f;
-    public static float COLOR_G = 1.0f;
-    public static float COLOR_B = 1.0f;
 
     @Nullable
     public static TextureAtlasSprite getSprite(Function<Material, TextureAtlasSprite> spriteGetter, @NotNull ResourceLocation location) {
@@ -39,162 +37,74 @@ public class ModelUtils {
         return null;
     }
 
-    public static void genQuads(List<TextureAtlasSprite> sprites, ImmutableList.Builder<BakedQuad> quads, Transformation transform) {
-        genFrontBackQuads(sprites, quads, transform);
-        genUpDownQuads(sprites, quads, transform);
-        genLeftRightQuads(sprites, quads, transform);
+    public static void genQuads(List<TextureAtlasSprite> sprites, List<BakedQuad> quads, Transformation transform, Function<Material, TextureAtlasSprite> spriteGetter) {
+        genQuads(sprites, quads, transform, false, spriteGetter, -1, null);
     }
 
-    private static void genFrontBackQuads(List<TextureAtlasSprite> sprites, ImmutableList.Builder<BakedQuad> quads, Transformation transform) {
-        /* North & South Side */
-        for (int ix = 0; ix <= 15; ix++) {
-            for (int iy = 0; iy <= 15; iy++) {
-                /* Find the last pixel not transparent in sprites, use that to build North/South quads */
-                TextureAtlasSprite sprite = findLastNotTransparent(ix, iy, sprites);
-                if (sprite == null) continue;
+    public static void genQuads(List<TextureAtlasSprite> sprites, List<BakedQuad> quads, Transformation transform, boolean blendQuads, Function<Material, TextureAtlasSprite> spriteGetter, int emissivity, Vector4f tintColor) {
+        addQuadsFromSprite(sprites, quads, transform, blendQuads, spriteGetter, emissivity, tintColor);
+    }
 
-                float xStart = ix / 16.0f;
-                float xEnd = (ix + 1) / 16.0f;
+    private static void addQuadsFromSprite(List<TextureAtlasSprite> sprites, List<BakedQuad> quads, Transformation transform, boolean blendQuads, Function<Material, TextureAtlasSprite> spriteGetter, int emissivity, Vector4f tintColor) {
+        List<BakedQuad> tempQuads = new ArrayList<>();
+        addQuads(sprites, tempQuads, transform, blendQuads, spriteGetter, emissivity, tintColor);
+        if (emissivity >= 0 && emissivity <= 15) {
+            QuadTransformers.settingEmissivity(emissivity).processInPlace(tempQuads);
+        }
+        quads.addAll(tempQuads);
+    }
 
-                float yStart = (16 - (iy + 1)) / 16.0f;
-                float yEnd = (16 - iy) / 16.0f;
+    private static void addQuads(List<TextureAtlasSprite> sprites, List<BakedQuad> quads, Transformation transform, boolean blendQuads, Function<Material, TextureAtlasSprite> spriteGetter, int emissivity, Vector4f tintColor) {
+        for (int x = 0; x <= 15; x++) {
+            for (int y = 0; y <= 15; y++) {
+                Vector4f blendCol = new Vector4f(0.0f, 0.0f, 0.0f, 0.0f);
+                int amountOfSpritesBlended = 0;
+                boolean doStuff = true;
+                for (TextureAtlasSprite sprite : sprites) {
+                    if (doStuff) {
+                        if (sprite == null) return;
+                        if (sprite.contents().isTransparent(0, x, y)) continue;
 
-                BakedQuad a = createQuad(
-                        new Vec3(xStart, yStart, NORTH_Z)
-                        , new Vec3(xStart, yEnd, NORTH_Z)
-                        , new Vec3(xEnd, yEnd, NORTH_Z)
-                        , new Vec3(xEnd, yStart, NORTH_Z)
-                        , ix, ix + 1, iy, iy + 1
-                        , sprite, Direction.NORTH, transform);
-
-                BakedQuad b = createQuad(
-                        new Vec3(xStart, yStart, SOUTH_Z)
-                        , new Vec3(xEnd, yStart, SOUTH_Z)
-                        , new Vec3(xEnd, yEnd, SOUTH_Z)
-                        , new Vec3(xStart, yEnd, SOUTH_Z)
-                        , ix, ix + 1, iy, iy + 1
-                        , sprite, Direction.SOUTH, transform);
-
-                if (a != null) {
-                    quads.add(a);
+                        if (blendQuads) {
+                            blendCol.add(deconstructCol(sprite.getPixelRGBA(0, x, y), sprite.contents().getOriginalImage().format()));
+                            amountOfSpritesBlended++;
+                        } else {
+                            genLastNotTransparentQuads(sprites, tintColor, x, y, transform, quads, spriteGetter);
+                            doStuff = false;
+                        }
+                    }
                 }
-                if (b != null) {
-                    quads.add(b);
+
+                if (blendQuads) {
+                    blendCol.div(amountOfSpritesBlended * 255);
+                    genBlendedQuads(blendCol, quads, transform, x, y, spriteGetter);
                 }
             }
         }
     }
 
-    private static void genUpDownQuads(List<TextureAtlasSprite> sprites, ImmutableList.Builder<BakedQuad> quads, Transformation transform) {
-        for (int ix = 0; ix <= 15; ix++) {
-            float xStart = ix / 16.0f;
-            float xEnd = (ix + 1) / 16.0f;
+    public static void genBlendedQuads(Vector4f blendCol, List<BakedQuad> quads, Transformation transform, int x, int y, Function<Material, TextureAtlasSprite> spriteGetter) {
+        TextureAtlasSprite white = getSprite(spriteGetter, new ResourceLocation(ItemRenderingAPI.MOD_ID, "item/white"));
 
-            /* Scan from Up to Bottom, find the pixel not transparent, use that to build Top quads */
-            for (int iy = 0; iy <= 15; iy++) {
-                TextureAtlasSprite sprite = findLastNotTransparent(ix, iy, sprites);
-                if (sprite == null) {
-                    continue;
-                }
-
-                    quads.add(createQuad(
-                            new Vec3(xStart, (16 - iy) / 16.0f, NORTH_Z)
-                            , new Vec3(xStart, (16 - iy) / 16.0f, SOUTH_Z)
-                            , new Vec3(xEnd, (16 - iy) / 16.0f, SOUTH_Z)
-                            , new Vec3(xEnd, (16 - iy) / 16.0f, NORTH_Z)
-                            , ix, ix + 1, iy, iy + 1
-                            , sprite, Direction.UP, transform));
-
-            }
-
-            /* Scan from Bottom to Up, find the pixel not transparent, use that to build Down quads */
-            for (int iy = 15; iy >= 0; iy--) {
-                TextureAtlasSprite sprite = findLastNotTransparent(ix, iy, sprites);
-                if (sprite == null) {
-                    continue;
-                }
-
-                    quads.add(createQuad(
-                            new Vec3(xStart, (16 - (iy + 1)) / 16.0f, NORTH_Z)
-                            , new Vec3(xEnd, (16 - (iy + 1)) / 16.0f, NORTH_Z)
-                            , new Vec3(xEnd, (16 - (iy + 1)) / 16.0f, SOUTH_Z)
-                            , new Vec3(xStart, (16 - (iy + 1)) / 16.0f, SOUTH_Z)
-                            , ix, ix + 1, iy, iy + 1
-                            , sprite, Direction.DOWN, transform));
-
-            }
-        }
+        genFrontBackTextureQuad(white, quads, transform, x, y, blendCol);
+        genUpDownTextureQuad(white, quads, transform, x, y, blendCol);
+        genLeftRightTextureQuad(white, quads, transform, x, y, blendCol);
     }
 
-    private static void genLeftRightQuads(List<TextureAtlasSprite> sprites, ImmutableList.Builder<BakedQuad> quads, Transformation transform) {
-        for (int iy = 0; iy <= 15; iy++) {
-            float yStart = (16 - (iy + 1)) / 16.0f;
-            float yEnd = (16 - iy) / 16.0f;
+    public static void genLastNotTransparentQuads(List<TextureAtlasSprite> sprites, Vector4f tintColor, int x, int y, Transformation transform, List<BakedQuad> quads, Function<Material, TextureAtlasSprite> spriteGetter) {
+        TextureAtlasSprite sprite = findLastNotTransparent(x, y, sprites);
 
-            /* Scan from Left to Right, find the pixel not transparent, use that to build West quads */
-            for (int ix = 0; ix <= 15; ix++) {
-                TextureAtlasSprite sprite = findLastNotTransparent(ix, iy, sprites);
-                if (sprite == null) {
-                    continue;
-                }
-                quads.add(createQuad(
-                        new Vec3(ix / 16.0f, yStart, NORTH_Z)
-                        , new Vec3(ix / 16.0f, yStart, SOUTH_Z)
-                        , new Vec3(ix / 16.0f, yEnd, SOUTH_Z)
-                        , new Vec3(ix / 16.0f, yEnd, NORTH_Z)
-                        , ix, ix + 1, iy, iy + 1
-                        , sprite, Direction.WEST, transform));
-
-            }
-            /* Scan from Right to Left, find the pixel not transparent, use that to build East quads */
-            for (int ix = 15; ix >= 0; ix--) {
-                TextureAtlasSprite sprite = findLastNotTransparent(ix, iy, sprites);
-                if (sprite == null) {
-                    continue;
-                }
-                quads.add(createQuad(
-                        new Vec3((ix + 1) / 16.0f, yStart, NORTH_Z)
-                        , new Vec3((ix + 1) / 16.0f, yEnd, NORTH_Z)
-                        , new Vec3((ix + 1) / 16.0f, yEnd, SOUTH_Z)
-                        , new Vec3((ix + 1) / 16.0f, yStart, SOUTH_Z)
-                        , ix, ix + 1, iy, iy + 1
-                        , sprite, Direction.EAST, transform));
-
-            }
-        }
+        genFrontBackTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor);
+        genUpDownTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor);
+        genLeftRightTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor);
     }
 
-
-    /* Give four corner, generate a quad */
-    private static BakedQuad createQuad(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4
-            , int xStart, int xEnd, int yStart, int yEnd, TextureAtlasSprite sprite
-            , Direction orientation, Transformation transform) {
-
-        BakedQuad[] quad = new BakedQuad[1];
-        QuadBakingVertexConsumer builder = new QuadBakingVertexConsumer(q -> quad[0] = q);
-        VertexConsumer consumer = new TransformingVertexPipeline(builder, transform);
-
-        builder.setSprite(sprite);
-
-        putVertex(consumer, v1, xStart, yEnd, sprite, orientation);
-        putVertex(consumer, v2, xStart, yStart, sprite, orientation);
-        putVertex(consumer, v3, xEnd, yStart, sprite, orientation);
-        putVertex(consumer, v4, xEnd, yEnd, sprite, orientation);
-
-        return quad[0];
-    }
-
-    /* Put data into the consumer */
-    private static void putVertex(VertexConsumer consumer, Vec3 vec, double u, double v, TextureAtlasSprite sprite, Direction orientation) {
-        float fu = sprite.getU0() + (sprite.getU1() - sprite.getU0()) * (float)u / 16.0F;
-        float fv = sprite.getV0() + (sprite.getV1() - sprite.getV0()) * (float)v / 16.0F;
-
-        consumer.vertex((float) vec.x, (float) vec.y, (float) vec.z)
-                .color(COLOR_R, COLOR_G, COLOR_B, 1)
-                .normal((float) orientation.getStepX(), (float) orientation.getStepY(), (float) orientation.getStepZ())
-                .uv(fu, fv)
-                .uv2(0, 0)
-                .endVertex();
+    private static Vector4f deconstructCol(int color, NativeImage.Format format) {
+        int a = (color >> format.alphaOffset()) & 0xff; // or color >>> 24
+        int r = (color >> format.redOffset()) & 0xff;
+        int g = (color >> format.greenOffset()) & 0xff;
+        int b = (color >> format.blueOffset()) & 0xff;
+        return new Vector4f(r, g, b, a);
     }
 
     @Nullable

@@ -13,6 +13,7 @@ import net.minecraft.client.resources.model.ModelState;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.neoforged.neoforge.client.model.SimpleModelState;
+import net.neoforged.neoforge.client.model.geometry.BlockGeometryBakingContext;
 import net.neoforged.neoforge.client.model.geometry.IGeometryBakingContext;
 import net.neoforged.neoforge.client.model.geometry.IUnbakedGeometry;
 import net.vakror.item_rendering_api.core.registry.ItemRenderingAPIModelReadersRegistry;
@@ -35,7 +36,7 @@ public class ItemRenderingAPIModel implements IUnbakedGeometry<ItemRenderingAPIM
 	@Override
 	public @NotNull BakedModel bake(IGeometryBakingContext owner, @NotNull ModelBaker bakery
 			, Function<Material, TextureAtlasSprite> spriteGetter, ModelState modelTransform
-			, @NotNull ItemOverrides overrides, ResourceLocation modelLocation){
+			, @NotNull ItemOverrides overrides, ResourceLocation modelLocation) {
 
 		ResourceLocation item = new ResourceLocation(modelLocation.toString().split("#")[0]);
 		IItemRenderingAPIModelReader reader = ItemRenderingAPIModelReadersRegistry.READERS.get(ItemRenderingAPIModelReadersRegistry.ITEMS.get(item));

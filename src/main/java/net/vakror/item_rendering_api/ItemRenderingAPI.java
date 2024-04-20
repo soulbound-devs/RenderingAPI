@@ -1,13 +1,20 @@
 package net.vakror.item_rendering_api;
 
 import com.mojang.logging.LogUtils;
+import dev.architectury.event.EventResult;
+import dev.architectury.platform.Platform;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.neoforge.client.event.ModelEvent;
+import net.neoforged.neoforge.common.NeoForgeMod;
 import net.vakror.item_rendering_api.core.renderapi.ItemRenderingAPIModelLoader;
+import net.vakror.item_rendering_api.test.TestItems;
+import net.vakror.item_rendering_api.test.extension.TestExtension;
+import net.vakror.registry.jamesregistryapi.api.event.RegistryEvents;
 import org.slf4j.Logger;
 
 // The value here should match an entry in the META-INF/mods.toml file
@@ -19,9 +26,14 @@ public class ItemRenderingAPI
     // Directly reference a slf4j logger
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    // The constructor for the mod class is the first code that is run when your mod is loaded.
-    // FML will recognize some parameter types like IEventBus or ModContainer and pass them in automatically.
     public ItemRenderingAPI(IEventBus modEventBus) {
+        if (!FMLLoader.isProduction()) {
+            TestItems.ITEM_REGISTER.register(modEventBus);
+            RegistryEvents.SETUP_REGISTRY_EVENT.register(event -> {
+                event.addRegistry(new TestExtension());
+                return EventResult.pass();
+            });
+        }
     }
 
     @Mod.EventBusSubscriber(modid = MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)

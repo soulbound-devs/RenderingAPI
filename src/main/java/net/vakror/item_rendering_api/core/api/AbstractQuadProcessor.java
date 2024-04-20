@@ -1,7 +1,11 @@
 package net.vakror.item_rendering_api.core.api;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonObject;
+import com.mojang.math.Transformation;
 import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.client.renderer.block.model.ItemTransform;
+import net.minecraft.world.item.ItemDisplayContext;
 
 import java.util.List;
 
@@ -18,5 +22,5 @@ public abstract class AbstractQuadProcessor {
      * @param layers an immutable list of all layers
      * @param data extra data to process the quads with
      */
-    public abstract void processQuads(List<BakedQuad> bakedQuads, List<AbstractItemRenderingAPILayer> layers, ItemRenderingAPIQuadRenderData data);
+    public abstract void processQuads(List<BakedQuad> bakedQuads, List<AbstractItemRenderingAPILayer> layers, ItemRenderingAPIQuadRenderData data, Transformation transform, ImmutableMap<ItemDisplayContext, ItemTransform> itemTransforms);
 }

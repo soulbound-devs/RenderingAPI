@@ -3,9 +3,12 @@ package net.vakror.item_rendering_api.core.api;
 import com.google.common.collect.ImmutableList;
 import com.mojang.math.Transformation;
 import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.resources.ResourceLocation;
 import net.vakror.item_rendering_api.core.renderapi.ItemRenderingAPIBakedModel;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
 
 /**
  * The abstract class representing an item layer.
@@ -22,7 +25,7 @@ public abstract class AbstractItemRenderingAPILayer {
      * @param transformation the transformation of this model (generally not needed)
      * @param data extra data, such as the item stack. Very useful for rendering based off nbt data.
      */
-    public abstract void render(ImmutableList.Builder<BakedQuad> quads, Transformation transformation, ItemRenderingAPIQuadRenderData data);
+    public abstract void render(List<BakedQuad> quads, Transformation transformation, ItemRenderingAPIQuadRenderData data);
 
     /**
      * gets the key used for caching models.
