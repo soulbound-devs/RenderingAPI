@@ -28,8 +28,9 @@ public class TestExtension extends AbstractExtension<ModelReaderRegistrationCont
                 return List.of(
                         new TextureRenderLayer(
                                 new ResourceLocation(ItemRenderingAPI.MOD_ID ,"item/red"),
-                                new ResourceLocation(ItemRenderingAPI.MOD_ID, "item/tester"))
+                                new ResourceLocation(ItemRenderingAPI.MOD_ID, "item/black"))
                                 .fullBright()
+                                .withTextureSize(32)
                                 .withBlending()
                 );
             }
