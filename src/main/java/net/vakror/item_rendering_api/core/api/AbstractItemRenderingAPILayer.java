@@ -34,7 +34,7 @@ public abstract class AbstractItemRenderingAPILayer {
      * @return the cache key for this layer
      */
     @NotNull
-    public abstract String getCacheKey();
+    public abstract String getCacheKey(ItemRenderingAPIQuadRenderData data);
 
     /**
      * internal method to set up extra data

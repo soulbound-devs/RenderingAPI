@@ -100,7 +100,7 @@ public class ItemRenderingAPIBakedModel extends BakedItemModel {
 	private String getCacheKeyString(){
 		List<String> locations = new ArrayList<>();
 		for (AbstractItemRenderingAPILayer layer : layers) {
-			locations.add(layer.getCacheKey());
+			locations.add(layer.getCacheKey(layer.data));
 		}
         return String.join(",", locations);
 	}

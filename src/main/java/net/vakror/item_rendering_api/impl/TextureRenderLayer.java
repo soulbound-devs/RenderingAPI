@@ -44,7 +44,7 @@ public class TextureRenderLayer extends AbstractItemRenderingAPILayer {
     }
 
     @Override
-    public @NotNull String getCacheKey() {
+    public @NotNull String getCacheKey(ItemRenderingAPIQuadRenderData data) {
         StringBuilder builder = new StringBuilder();
         for (ResourceLocation texture : textures) {
             builder.append(texture.toString());
@@ -95,6 +95,9 @@ public class TextureRenderLayer extends AbstractItemRenderingAPILayer {
     }
 
     public TextureRenderLayer withTextureSize(int textureSize) {
+        if (!ModelUtils.isPowerOfTwo(textureSize)) {
+            throw new IllegalArgumentException("Texture size must be a power of two!");
+        }
         this.textureSize = textureSize;
         return this;
     }

@@ -116,4 +116,8 @@ public class ModelUtils {
         }
         return null;
     }
+
+    public static boolean isPowerOfTwo(int x) {
+        return x != 0 && ((x & (x - 1)) == 0);
+    }
 }
