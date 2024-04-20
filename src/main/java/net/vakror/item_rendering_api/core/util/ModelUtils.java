@@ -8,8 +8,6 @@ import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.Material;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.ColorRGBA;
-import net.minecraft.util.FastColor;
 import net.neoforged.neoforge.client.model.QuadTransformers;
 import net.vakror.item_rendering_api.ItemRenderingAPI;
 import org.jetbrains.annotations.NotNull;
