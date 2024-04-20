@@ -20,9 +20,8 @@ import java.util.List;
 import java.util.function.Function;
 
 public class ModelUtils {
-
-    public static float NORTH_Z = 7.496f / 16f;
-    public static float SOUTH_Z = 8.504f / 16f;
+    public static final float NORTH_Z = 7.496f;
+    public static final float SOUTH_Z = 8.504f;
 
     @Nullable
     public static TextureAtlasSprite getSprite(Function<Material, TextureAtlasSprite> spriteGetter, @NotNull ResourceLocation location) {
@@ -67,7 +66,7 @@ public class ModelUtils {
                             blendCol.add(deconstructCol(sprite.getPixelRGBA(0, x, y), sprite.contents().getOriginalImage().format()));
                             amountOfSpritesBlended++;
                         } else {
-                            genLastNotTransparentQuads(sprites, tintColor, x, y, transform, quads, spriteGetter);
+                            genLastNotTransparentQuads(sprites, tintColor, x, y, transform, quads, textureSize);
                             doStuff = false;
                         }
                     }
@@ -75,26 +74,26 @@ public class ModelUtils {
 
                 if (blendQuads) {
                     blendCol.div(amountOfSpritesBlended * 255);
-                    genBlendedQuads(blendCol, quads, transform, x, y, spriteGetter);
+                    genBlendedQuads(blendCol, quads, transform, x, y, spriteGetter, textureSize);
                 }
             }
         }
     }
 
-    public static void genBlendedQuads(Vector4f blendCol, List<BakedQuad> quads, Transformation transform, int x, int y, Function<Material, TextureAtlasSprite> spriteGetter) {
+    public static void genBlendedQuads(Vector4f blendCol, List<BakedQuad> quads, Transformation transform, int x, int y, Function<Material, TextureAtlasSprite> spriteGetter, int textureSize) {
         TextureAtlasSprite white = getSprite(spriteGetter, new ResourceLocation(ItemRenderingAPI.MOD_ID, "item/white"));
 
-        genFrontBackTextureQuad(white, quads, transform, x, y, blendCol);
-        genUpDownTextureQuad(white, quads, transform, x, y, blendCol);
-        genLeftRightTextureQuad(white, quads, transform, x, y, blendCol);
+        genFrontBackTextureQuad(white, quads, transform, x, y, blendCol, textureSize);
+        genUpDownTextureQuad(white, quads, transform, x, y, blendCol, textureSize);
+        genLeftRightTextureQuad(white, quads, transform, x, y, blendCol, textureSize);
     }
 
-    public static void genLastNotTransparentQuads(List<TextureAtlasSprite> sprites, Vector4f tintColor, int x, int y, Transformation transform, List<BakedQuad> quads, Function<Material, TextureAtlasSprite> spriteGetter) {
+    public static void genLastNotTransparentQuads(List<TextureAtlasSprite> sprites, Vector4f tintColor, int x, int y, Transformation transform, List<BakedQuad> quads, int textureSize) {
         TextureAtlasSprite sprite = findLastNotTransparent(x, y, sprites);
 
-        genFrontBackTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor);
-        genUpDownTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor);
-        genLeftRightTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor);
+        genFrontBackTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor, textureSize);
+        genUpDownTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor, textureSize);
+        genLeftRightTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor, textureSize);
     }
 
     private static Vector4f deconstructCol(int color, NativeImage.Format format) {
