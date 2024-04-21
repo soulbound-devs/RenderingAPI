@@ -35,14 +35,53 @@ public class ModelUtils {
     }
 
     public static void genQuads(List<TextureAtlasSprite> sprites, List<BakedQuad> quads, Transformation transform, Function<Material, TextureAtlasSprite> spriteGetter) {
-        genQuads(sprites, quads, transform, false, spriteGetter, -1, null, 16);
+        genQuads(sprites, quads, transform, false, spriteGetter, -1, null, 16, true);
     }
 
-    public static void genQuads(List<TextureAtlasSprite> sprites, List<BakedQuad> quads, Transformation transform, boolean blendQuads, Function<Material, TextureAtlasSprite> spriteGetter, int emissivity, Vector4f tintColor, int textureSize) {
-        addQuadsFromSprite(sprites, quads, transform, blendQuads, spriteGetter, emissivity, tintColor, textureSize);
+    public static void genQuads(List<TextureAtlasSprite> sprites, List<BakedQuad> quads, Transformation transform, boolean blendQuads, Function<Material, TextureAtlasSprite> spriteGetter, int emissivity, Vector4f tintColor, int textureSize, boolean removeInternalQuads) {
+        if (removeInternalQuads) {
+            addExternalQuadsFromSprite(sprites, quads, transform, blendQuads, spriteGetter, emissivity, tintColor, textureSize);
+        } else {
+            addAllQuadsFromSprite(sprites, quads, transform, blendQuads, spriteGetter, emissivity, tintColor, textureSize);
+        }
     }
 
-    private static void addQuadsFromSprite(List<TextureAtlasSprite> sprites, List<BakedQuad> quads, Transformation transform, boolean blendQuads, Function<Material, TextureAtlasSprite> spriteGetter, int emissivity, Vector4f tintColor, int textureSize) {
+    private static void addAllQuadsFromSprite(List<TextureAtlasSprite> sprites, List<BakedQuad> quads, Transformation transform, boolean blendQuads, Function<Material, TextureAtlasSprite> spriteGetter, int emissivity, Vector4f tintColor, int textureSize) {
+        for (int y = 0; y <= textureSize - 1; y++) {
+            for (int x = 0; x <= textureSize - 1; x++) {
+                Vector4f blendCol = new Vector4f(0.0f, 0.0f, 0.0f, 0.0f);
+                int amountOfSpritesBlended = 0;
+                boolean doStuff = true;
+                for (TextureAtlasSprite sprite : sprites) {
+                    if (doStuff) {
+                        if (sprite == null) return;
+                        if (sprite.contents().isTransparent(0, x, y)) continue;
+
+                        if (blendQuads) {
+                            blendCol.add(deconstructCol(sprite.getPixelRGBA(0, x, y), sprite.contents().getOriginalImage().format()));
+                            amountOfSpritesBlended++;
+                        } else {
+                            genLeftRightFrontBackLastNotTransparentQuads(sprites, tintColor, x, y, transform, quads, textureSize, new ArrayList<>(), new ArrayList<>());
+                            genUpDownLastNotTransparentQuads(sprites, tintColor, x, y, transform, quads, textureSize, new ArrayList<>(), new ArrayList<>());
+                            doStuff = false;
+                        }
+                        if (blendQuads) {
+                            blendCol.add(deconstructCol(sprite.getPixelRGBA(0, x, y), sprite.contents().getOriginalImage().format()));
+                            amountOfSpritesBlended++;
+                        }
+                    }
+                }
+
+                if (blendQuads && findLastNotTransparent(x, y, sprites) != null) {
+                    blendCol.div(amountOfSpritesBlended * 255);
+                    genLeftRightFrontBackBlendedQuads(blendCol, quads, transform, x, y, spriteGetter, textureSize, new ArrayList<>(), new ArrayList<>());
+                    genUpDownBlendedQuads(blendCol, quads, transform, x, y, spriteGetter, textureSize, new ArrayList<>(), new ArrayList<>());
+                }
+            }
+        }
+    }
+
+    private static void addExternalQuadsFromSprite(List<TextureAtlasSprite> sprites, List<BakedQuad> quads, Transformation transform, boolean blendQuads, Function<Material, TextureAtlasSprite> spriteGetter, int emissivity, Vector4f tintColor, int textureSize) {
         List<BakedQuad> tempQuads = new ArrayList<>();
         addQuads(sprites, tempQuads, transform, blendQuads, spriteGetter, tintColor, textureSize);
         if (emissivity >= 0 && emissivity <= 15) {
@@ -52,7 +91,69 @@ public class ModelUtils {
     }
 
     private static void addQuads(List<TextureAtlasSprite> sprites, List<BakedQuad> quads, Transformation transform, boolean blendQuads, Function<Material, TextureAtlasSprite> spriteGetter, Vector4f tintColor, int textureSize) {
+        for (int y = 0; y <= textureSize - 1; y++) {
+            List<Integer> leftMost = new ArrayList<>();
+            List<Integer> rightMost = new ArrayList<>();
+
+            boolean hasFoundTransparent = true;
+
+            for (int x = 0; x <= textureSize - 1; x++) {
+                if (findLastNotTransparent(x, y, sprites) != null && hasFoundTransparent) {
+                    leftMost.add(x);
+                    hasFoundTransparent = false;
+                }
+                if (findLastNotTransparent(x, y, sprites) == null) {
+                    if (!hasFoundTransparent) {
+                        rightMost.add(x - 1);
+                    }
+                    hasFoundTransparent = true;
+                }
+            }
+
+            for (int x = 0; x <= textureSize - 1; x++) {
+                Vector4f blendCol = new Vector4f(0.0f, 0.0f, 0.0f, 0.0f);
+                int amountOfSpritesBlended = 0;
+                boolean doStuff = true;
+                for (TextureAtlasSprite sprite : sprites) {
+                    if (doStuff) {
+                        if (sprite == null) return;
+                        if (sprite.contents().isTransparent(0, x, y)) continue;
+
+                        if (blendQuads) {
+                            blendCol.add(deconstructCol(sprite.getPixelRGBA(0, x, y), sprite.contents().getOriginalImage().format()));
+                            amountOfSpritesBlended++;
+                        } else {
+                            genLeftRightFrontBackLastNotTransparentQuads(sprites, tintColor, x, y, transform, quads, textureSize, leftMost, rightMost);
+                            doStuff = false;
+                        }
+                    }
+                }
+
+                if (blendQuads && findLastNotTransparent(x, y, sprites) != null) {
+                    blendCol.div(amountOfSpritesBlended * 255);
+                    genLeftRightFrontBackBlendedQuads(blendCol, quads, transform, x, y, spriteGetter, textureSize, leftMost, rightMost);
+                }
+            }
+        }
+
         for (int x = 0; x <= textureSize - 1; x++) {
+            List<Integer> topMost = new ArrayList<>();
+            List<Integer> bottomMost = new ArrayList<>();
+
+            boolean hasFoundTransparent = true;
+
+            for (int y = 0; y <= textureSize - 1; y++) {
+                if (findLastNotTransparent(x, y, sprites) != null && hasFoundTransparent) {
+                    topMost.add(y);
+                    hasFoundTransparent = false;
+                }
+                if (findLastNotTransparent(x, y, sprites) == null) {
+                    if (!hasFoundTransparent) {
+                        bottomMost.add(y - 1);
+                    }
+                    hasFoundTransparent = true;
+                }
+            }
             for (int y = 0; y <= textureSize - 1; y++) {
                 Vector4f blendCol = new Vector4f(0.0f, 0.0f, 0.0f, 0.0f);
                 int amountOfSpritesBlended = 0;
@@ -66,34 +167,82 @@ public class ModelUtils {
                             blendCol.add(deconstructCol(sprite.getPixelRGBA(0, x, y), sprite.contents().getOriginalImage().format()));
                             amountOfSpritesBlended++;
                         } else {
-                            genLastNotTransparentQuads(sprites, tintColor, x, y, transform, quads, textureSize);
+                            genUpDownLastNotTransparentQuads(sprites, tintColor, x, y, transform, quads, textureSize, topMost, bottomMost);
                             doStuff = false;
                         }
                     }
                 }
 
-                if (blendQuads) {
+                if (blendQuads && findLastNotTransparent(x, y, sprites) != null) {
                     blendCol.div(amountOfSpritesBlended * 255);
-                    genBlendedQuads(blendCol, quads, transform, x, y, spriteGetter, textureSize);
+                    genUpDownBlendedQuads(blendCol, quads, transform, x, y, spriteGetter, textureSize, topMost, bottomMost);
                 }
             }
         }
     }
 
-    public static void genBlendedQuads(Vector4f blendCol, List<BakedQuad> quads, Transformation transform, int x, int y, Function<Material, TextureAtlasSprite> spriteGetter, int textureSize) {
+    public static void genLeftRightFrontBackBlendedQuads(Vector4f blendCol, List<BakedQuad> quads, Transformation transform, int x, int y, Function<Material, TextureAtlasSprite> spriteGetter, int textureSize, List<Integer> leftMost, List<Integer> rightMost) {
         TextureAtlasSprite white = getSprite(spriteGetter, new ResourceLocation(ItemRenderingAPI.MOD_ID, "item/white"));
-
         genFrontBackTextureQuad(white, quads, transform, x, y, blendCol, textureSize);
-        genUpDownTextureQuad(white, quads, transform, x, y, blendCol, textureSize);
-        genLeftRightTextureQuad(white, quads, transform, x, y, blendCol, textureSize);
+
+        if (leftMost.isEmpty() && rightMost.isEmpty()) {
+            genLeftTextureQuad(white, quads, transform, x, y, blendCol, textureSize);
+            genRightTextureQuad(white, quads, transform, x, y, blendCol, textureSize);
+        }
+
+        if (leftMost.contains(x)) {
+            genLeftTextureQuad(white, quads, transform, x, y, blendCol, textureSize);
+        } if (rightMost.contains(x)) {
+            genRightTextureQuad(white, quads, transform, x, y, blendCol, textureSize);
+        }
     }
 
-    public static void genLastNotTransparentQuads(List<TextureAtlasSprite> sprites, Vector4f tintColor, int x, int y, Transformation transform, List<BakedQuad> quads, int textureSize) {
+
+    public static void genLeftRightFrontBackLastNotTransparentQuads(List<TextureAtlasSprite> sprites, Vector4f tintColor, int x, int y, Transformation transform, List<BakedQuad> quads, int textureSize, List<Integer> leftMost, List<Integer> rightMost) {
+        TextureAtlasSprite sprite = findLastNotTransparent(x, y, sprites);
+        genFrontBackTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor, textureSize);
+
+        if (leftMost.isEmpty() && rightMost.isEmpty()) {
+            genLeftTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor, textureSize);
+            genRightTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor, textureSize);
+        }
+
+        if (leftMost.contains(x)) {
+            genLeftTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor, textureSize);
+        } if (rightMost.contains(x)) {
+            genRightTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor, textureSize);
+        }
+    }
+
+    public static void genUpDownBlendedQuads(Vector4f blendCol, List<BakedQuad> quads, Transformation transform, int x, int y, Function<Material, TextureAtlasSprite> spriteGetter, int textureSize, List<Integer> topMost, List<Integer> bottomMost) {
+        TextureAtlasSprite white = getSprite(spriteGetter, new ResourceLocation(ItemRenderingAPI.MOD_ID, "item/white"));
+
+        if (topMost.isEmpty() && bottomMost.isEmpty()) {
+            genUpTextureQuad(white, quads, transform, x, y, blendCol, textureSize);
+            genDownTextureQuad(white, quads, transform, x, y, blendCol, textureSize);
+        }
+
+        if (topMost.contains(y)) {
+            genUpTextureQuad(white, quads, transform, x, y, blendCol, textureSize);
+        } if (bottomMost.contains(y)) {
+            genDownTextureQuad(white, quads, transform, x, y, blendCol, textureSize);
+        }
+    }
+
+
+    public static void genUpDownLastNotTransparentQuads(List<TextureAtlasSprite> sprites, Vector4f tintColor, int x, int y, Transformation transform, List<BakedQuad> quads, int textureSize, List<Integer> topMost, List<Integer> bottomMost) {
         TextureAtlasSprite sprite = findLastNotTransparent(x, y, sprites);
 
-        genFrontBackTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor, textureSize);
-        genUpDownTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor, textureSize);
-        genLeftRightTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor, textureSize);
+        if (topMost.isEmpty() && bottomMost.isEmpty()) {
+            genUpTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor, textureSize);
+            genDownTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor, textureSize);
+        }
+
+        if (topMost.contains(y)) {
+            genUpTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor, textureSize);
+        } if (bottomMost.contains(y)) {
+            genDownTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor, textureSize);
+        }
     }
 
     private static Vector4f deconstructCol(int color, NativeImage.Format format) {

@@ -9,6 +9,7 @@ import net.vakror.item_rendering_api.core.api.AbstractQuadProcessor;
 import net.vakror.item_rendering_api.core.api.IItemRenderingAPIModelReader;
 import net.vakror.item_rendering_api.core.api.ItemRenderingAPIQuadRenderData;
 import net.vakror.item_rendering_api.core.extension.context.ModelReaderRegistrationContext;
+import net.vakror.item_rendering_api.impl.RemoveDuplicateQuadsProcessor;
 import net.vakror.item_rendering_api.impl.TextureRenderLayer;
 import net.vakror.registry.jamesregistryapi.api.AbstractExtension;
 
@@ -27,10 +28,9 @@ public class TestExtension extends AbstractExtension<ModelReaderRegistrationCont
             public List<AbstractItemRenderingAPILayer> getLayers(JsonObject object) {
                 return List.of(
                         new TextureRenderLayer(
-                                new ResourceLocation(ItemRenderingAPI.MOD_ID ,"item/red"),
-                                new ResourceLocation(ItemRenderingAPI.MOD_ID, "item/black"))
+                                new ResourceLocation(ItemRenderingAPI.MOD_ID ,"item/test"))
                                 .fullBright()
-                                .withTextureSize(32)
+                                .withTextureSize(16)
                                 .withBlending()
                 );
             }
@@ -42,7 +42,7 @@ public class TestExtension extends AbstractExtension<ModelReaderRegistrationCont
 
             @Override
             public List<AbstractQuadProcessor> getQuadProcessors(JsonObject object, ItemRenderingAPIQuadRenderData data) {
-                return List.of();
+                return List.of(new RemoveDuplicateQuadsProcessor());
             }
         });
         context.addItemForReader(new ResourceLocation(ItemRenderingAPI.MOD_ID, "test"), new ResourceLocation(ItemRenderingAPI.MOD_ID, "test"));

@@ -27,21 +27,35 @@ public class QuadMaker {
         float yStart = (float) (textureSize - (y + 1)) / textureSize;
         float yEnd = (float) (textureSize - y) / textureSize;
 
-        BakedQuad a = createQuad(
-                new Vec3(xStart, yStart, NORTH_Z / textureSize)
-                , new Vec3(xStart, yEnd, NORTH_Z / textureSize)
-                , new Vec3(xEnd, yEnd, NORTH_Z / textureSize)
-                , new Vec3(xEnd, yStart, NORTH_Z / textureSize)
-                , x, x + 1, y, y + 1
-                , sprite, Direction.NORTH, transform, col, textureSize);
+        Vec3[] frontPositions = new Vec3[]{
+                new Vec3(xStart, yStart, NORTH_Z / textureSize),
+                new Vec3(xStart, yEnd, NORTH_Z / textureSize),
+                new Vec3(xEnd, yEnd, NORTH_Z / textureSize),
+                new Vec3(xEnd, yStart, NORTH_Z / textureSize)
+        };
 
-        BakedQuad b = createQuad(
+        Vec3[] backPositions = new Vec3[]{
                 new Vec3(xStart, yStart, SOUTH_Z / textureSize)
                 , new Vec3(xEnd, yStart, SOUTH_Z / textureSize)
                 , new Vec3(xEnd, yEnd, SOUTH_Z / textureSize)
                 , new Vec3(xStart, yEnd, SOUTH_Z / textureSize)
-                , x, x + 1, y, y + 1
-                , sprite, Direction.SOUTH, transform, col, textureSize);
+        };
+
+        BakedQuad a = createQuad(
+                frontPositions[0],
+                frontPositions[1],
+                frontPositions[2],
+                frontPositions[3],
+                x, x + 1, y, y + 1,
+                sprite, Direction.NORTH, transform, col, textureSize);
+
+        BakedQuad b = createQuad(
+                backPositions[0],
+                backPositions[1],
+                backPositions[2],
+                backPositions[3],
+                x, x + 1, y, y + 1,
+                sprite, Direction.SOUTH, transform, col, textureSize);
 
         if (a != null) {
             quads.add(a);
@@ -51,48 +65,85 @@ public class QuadMaker {
         }
     }
 
-    public static void genUpDownTextureQuad(TextureAtlasSprite sprite, List<BakedQuad> quads, Transformation transform, int x, int y, Vector4f col, int textureSize) {
+    public static void genUpTextureQuad(TextureAtlasSprite sprite, List<BakedQuad> quads, Transformation transform, int x, int y, Vector4f col, int textureSize) {
         float xStart = (float) x / textureSize;
         float xEnd = (float) (x + 1) / textureSize;
 
-        quads.add(createQuad(
-                new Vec3(xStart, (double) (textureSize - y) / textureSize, NORTH_Z / textureSize)
-                , new Vec3(xStart, (double) (textureSize - y) / textureSize, SOUTH_Z / textureSize)
-                , new Vec3(xEnd, (double) (textureSize - y) / textureSize, SOUTH_Z / textureSize)
-                , new Vec3(xEnd, (double) (textureSize - y) / textureSize, NORTH_Z / textureSize)
-                , x, x + 1, y, y + 1
-                , sprite, Direction.UP, transform, col, textureSize));
-
+        Vec3[] upPositions = new Vec3[]{
+                new Vec3(xStart, (double) (textureSize - y) / textureSize, NORTH_Z / textureSize),
+                new Vec3(xStart, (double) (textureSize - y) / textureSize, SOUTH_Z / textureSize),
+                new Vec3(xEnd, (double) (textureSize - y) / textureSize, SOUTH_Z / textureSize),
+                new Vec3(xEnd, (double) (textureSize - y) / textureSize, NORTH_Z / textureSize)
+        };
 
         quads.add(createQuad(
-                new Vec3(xStart, (double) (textureSize - (y + 1)) / textureSize, NORTH_Z / textureSize)
-                , new Vec3(xEnd, (double) (textureSize - (y + 1)) / textureSize, NORTH_Z / textureSize)
-                , new Vec3(xEnd, (double) (textureSize - (y + 1)) / textureSize, SOUTH_Z / textureSize)
-                , new Vec3(xStart, (double) (textureSize - (y + 1)) / textureSize, SOUTH_Z / textureSize)
-                , x, x + 1, y, y + 1
-                , sprite, Direction.DOWN, transform, col, textureSize));
+                upPositions[0],
+                upPositions[1],
+                upPositions[2],
+                upPositions[3],
+                x, x + 1, y, y + 1,
+                sprite, Direction.UP, transform, col, textureSize));
+    }
+
+    public static void genDownTextureQuad(TextureAtlasSprite sprite, List<BakedQuad> quads, Transformation transform, int x, int y, Vector4f col, int textureSize) {
+        float xStart = (float) x / textureSize;
+        float xEnd = (float) (x + 1) / textureSize;
+
+        Vec3[] downPositions = new Vec3[]{
+                new Vec3(xStart, (double) (textureSize - (y + 1)) / textureSize, NORTH_Z / textureSize),
+                new Vec3(xEnd, (double) (textureSize - (y + 1)) / textureSize, NORTH_Z / textureSize),
+                new Vec3(xEnd, (double) (textureSize - (y + 1)) / textureSize, SOUTH_Z / textureSize),
+                new Vec3(xStart, (double) (textureSize - (y + 1)) / textureSize, SOUTH_Z / textureSize)
+        };
+
+        quads.add(createQuad(
+                downPositions[0],
+                downPositions[1],
+                downPositions[2],
+                downPositions[3],
+                x, x + 1, y, y + 1,
+                sprite, Direction.DOWN, transform, col, textureSize));
 
     }
 
-    public static void genLeftRightTextureQuad(TextureAtlasSprite sprite, List<BakedQuad> quads, Transformation transform, int x, int y, Vector4f col, int textureSize) {
+    public static void genLeftTextureQuad(TextureAtlasSprite sprite, List<BakedQuad> quads, Transformation transform, int x, int y, Vector4f col, int textureSize) {
         float yStart = (float) (textureSize - (y + 1)) / textureSize;
         float yEnd = (float) (textureSize - y) / textureSize;
 
-        quads.add(createQuad(
+        Vec3[] leftPositions = new Vec3[]{
                 new Vec3((double) x / textureSize, yStart, NORTH_Z / textureSize)
                 , new Vec3((double) x / textureSize, yStart, SOUTH_Z / textureSize)
                 , new Vec3((double) x / textureSize, yEnd, SOUTH_Z / textureSize)
                 , new Vec3((double) x / textureSize, yEnd, NORTH_Z / textureSize)
-                , x, x + 1, y, y + 1
-                , sprite, Direction.WEST, transform, col, textureSize));
+        };
 
         quads.add(createQuad(
+                leftPositions[0],
+                leftPositions[1],
+                leftPositions[2],
+                leftPositions[3],
+                x, x + 1, y, y + 1,
+                sprite, Direction.WEST, transform, col, textureSize));
+    }
+
+    public static void genRightTextureQuad(TextureAtlasSprite sprite, List<BakedQuad> quads, Transformation transform, int x, int y, Vector4f col, int textureSize) {
+        float yStart = (float) (textureSize - (y + 1)) / textureSize;
+        float yEnd = (float) (textureSize - y) / textureSize;
+
+        Vec3[] rightPositions = new Vec3[]{
                 new Vec3((double) (x + 1) / textureSize, yStart, NORTH_Z / textureSize)
                 , new Vec3((double) (x + 1) / textureSize, yEnd, NORTH_Z / textureSize)
                 , new Vec3((double) (x + 1) / textureSize, yEnd, SOUTH_Z / textureSize)
                 , new Vec3((double) (x + 1) / textureSize, yStart, SOUTH_Z / textureSize)
-                , x, x + 1, y, y + 1
-                , sprite, Direction.EAST, transform, col, textureSize));
+        };
+
+        quads.add(createQuad(
+                rightPositions[0],
+                rightPositions[1],
+                rightPositions[2],
+                rightPositions[3],
+                x, x + 1, y, y + 1,
+                sprite, Direction.EAST, transform, col, textureSize));
 
     }
 

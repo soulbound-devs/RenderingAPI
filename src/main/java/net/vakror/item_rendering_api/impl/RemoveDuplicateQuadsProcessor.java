@@ -8,9 +8,11 @@ import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.ItemTransform;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemDisplayContext;
+import net.neoforged.neoforge.client.model.IQuadTransformer;
 import net.vakror.item_rendering_api.core.api.AbstractItemRenderingAPILayer;
 import net.vakror.item_rendering_api.core.api.AbstractQuadProcessor;
 import net.vakror.item_rendering_api.core.api.ItemRenderingAPIQuadRenderData;
+import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,13 +24,21 @@ public class RemoveDuplicateQuadsProcessor extends AbstractQuadProcessor {
         List<BakedQuad> copy = new ArrayList<>(bakedQuads);
         bakedQuads.clear();
 
-        Multimap<int[], Direction> positions = Multimaps.newListMultimap(new HashMap<>(), ArrayList::new);
+        List<Vector3f[]> positions = new ArrayList<>();
 
         for (BakedQuad quad : copy) {
-            if (!positions.containsEntry(quad.getVertices(), quad.getDirection())) {
+            if (!positions.contains(getPos(quad.getVertices()))) {
                 bakedQuads.add(quad);
-                positions.put(quad.getVertices(), quad.getDirection());
+                positions.add(getPos(quad.getVertices()));
             }
         }
+    }
+    public Vector3f[] getPos(int[] vertices) {
+        Vector3f[] positions = new Vector3f[4];
+        for (int i = 0; i < 4; i++) {
+            int offset = i * IQuadTransformer.STRIDE + IQuadTransformer.POSITION;
+            positions[i] = new Vector3f(vertices[offset], vertices[offset + 1], vertices[offset + 2]);
+        }
+        return positions;
     }
 }

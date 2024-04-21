@@ -30,7 +30,7 @@ public class TextureRenderLayer extends AbstractItemRenderingAPILayer {
     public final void render(List<BakedQuad> quads, Transformation transformation, ItemRenderingAPIQuadRenderData data) {
         List<TextureAtlasSprite> sprites = new ArrayList<>();
         getAdditionalTextures(sprites, data);
-        ModelUtils.genQuads(sprites, quads, transformation, blendQuads, data.spriteGetter(), emissivity, tint, textureSize);
+        ModelUtils.genQuads(sprites, quads, transformation, blendQuads, data.spriteGetter(), emissivity, tint, textureSize, true);
     }
 
     public void getAdditionalTextures(List<TextureAtlasSprite> sprites, ItemRenderingAPIQuadRenderData data) {
