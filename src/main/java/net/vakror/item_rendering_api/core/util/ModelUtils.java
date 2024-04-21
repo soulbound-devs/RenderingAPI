@@ -23,6 +23,12 @@ public class ModelUtils {
     public static final float NORTH_Z = 7.496f;
     public static final float SOUTH_Z = 8.504f;
 
+    /**
+     * utility function to get a {@link TextureAtlasSprite} using a sprite getter and a {@link ResourceLocation}
+     * @param spriteGetter the function that maps {@link Material Materials} to {@link TextureAtlasSprite TextureAtlasSprites}
+     * @param location the location of the texture
+     * @return the {@link TextureAtlasSprite} representing the file
+     */
     @Nullable
     public static TextureAtlasSprite getSprite(Function<Material, TextureAtlasSprite> spriteGetter, @NotNull ResourceLocation location) {
         @SuppressWarnings("deprecation")
@@ -39,11 +45,16 @@ public class ModelUtils {
     }
 
     public static void genQuads(List<TextureAtlasSprite> sprites, List<BakedQuad> quads, Transformation transform, boolean blendQuads, Function<Material, TextureAtlasSprite> spriteGetter, int emissivity, Vector4f tintColor, int textureSize, boolean removeInternalQuads) {
+        List<BakedQuad> tempQuads = new ArrayList<>();
         if (removeInternalQuads) {
-            addExternalQuadsFromSprite(sprites, quads, transform, blendQuads, spriteGetter, emissivity, tintColor, textureSize);
+            addExternalQuadsFromSprite(sprites, tempQuads, transform, blendQuads, spriteGetter, emissivity, tintColor, textureSize);
         } else {
-            addAllQuadsFromSprite(sprites, quads, transform, blendQuads, spriteGetter, emissivity, tintColor, textureSize);
+            addAllQuadsFromSprite(sprites, tempQuads, transform, blendQuads, spriteGetter, emissivity, tintColor, textureSize);
         }
+        if (emissivity >= 0 && emissivity <= 15) {
+            QuadTransformers.settingEmissivity(emissivity).processInPlace(tempQuads);
+        }
+        quads.addAll(tempQuads);
     }
 
     private static void addAllQuadsFromSprite(List<TextureAtlasSprite> sprites, List<BakedQuad> quads, Transformation transform, boolean blendQuads, Function<Material, TextureAtlasSprite> spriteGetter, int emissivity, Vector4f tintColor, int textureSize) {
@@ -82,15 +93,6 @@ public class ModelUtils {
     }
 
     private static void addExternalQuadsFromSprite(List<TextureAtlasSprite> sprites, List<BakedQuad> quads, Transformation transform, boolean blendQuads, Function<Material, TextureAtlasSprite> spriteGetter, int emissivity, Vector4f tintColor, int textureSize) {
-        List<BakedQuad> tempQuads = new ArrayList<>();
-        addQuads(sprites, tempQuads, transform, blendQuads, spriteGetter, tintColor, textureSize);
-        if (emissivity >= 0 && emissivity <= 15) {
-            QuadTransformers.settingEmissivity(emissivity).processInPlace(tempQuads);
-        }
-        quads.addAll(tempQuads);
-    }
-
-    private static void addQuads(List<TextureAtlasSprite> sprites, List<BakedQuad> quads, Transformation transform, boolean blendQuads, Function<Material, TextureAtlasSprite> spriteGetter, Vector4f tintColor, int textureSize) {
         for (int y = 0; y <= textureSize - 1; y++) {
             List<Integer> leftMost = new ArrayList<>();
             List<Integer> rightMost = new ArrayList<>();

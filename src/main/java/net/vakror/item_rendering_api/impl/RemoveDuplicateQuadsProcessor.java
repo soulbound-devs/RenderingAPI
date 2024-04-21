@@ -1,21 +1,17 @@
 package net.vakror.item_rendering_api.impl;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
 import com.mojang.math.Transformation;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.ItemTransform;
-import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.neoforged.neoforge.client.model.IQuadTransformer;
 import net.vakror.item_rendering_api.core.api.AbstractItemRenderingAPILayer;
 import net.vakror.item_rendering_api.core.api.AbstractQuadProcessor;
-import net.vakror.item_rendering_api.core.api.ItemRenderingAPIQuadRenderData;
+import net.vakror.item_rendering_api.core.api.data.ItemRenderingAPIQuadRenderData;
 import org.joml.Vector3f;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 public class RemoveDuplicateQuadsProcessor extends AbstractQuadProcessor {

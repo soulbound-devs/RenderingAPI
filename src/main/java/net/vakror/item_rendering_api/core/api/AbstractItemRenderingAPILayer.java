@@ -2,7 +2,8 @@ package net.vakror.item_rendering_api.core.api;
 
 import com.mojang.math.Transformation;
 import net.minecraft.client.renderer.block.model.BakedQuad;
-import net.vakror.item_rendering_api.core.renderapi.ItemRenderingAPIBakedModel;
+import net.vakror.item_rendering_api.core.api.data.ItemRenderingAPIQuadRenderData;
+import net.vakror.item_rendering_api.core.model.ItemRenderingAPIBakedModel;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 

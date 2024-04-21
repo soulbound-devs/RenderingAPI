@@ -1,13 +1,14 @@
-package net.vakror.item_rendering_api.core.api;
+package net.vakror.item_rendering_api.core.api.data;
 
-import com.mojang.math.Transformation;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.Material;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
-import net.vakror.item_rendering_api.core.renderapi.ItemRenderingAPIBakedModel;
+import net.vakror.item_rendering_api.core.api.AbstractItemRenderingAPILayer;
+import net.vakror.item_rendering_api.core.api.AbstractQuadProcessor;
+import net.vakror.item_rendering_api.core.model.ItemRenderingAPIBakedModel;
 import org.jetbrains.annotations.Nullable;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;

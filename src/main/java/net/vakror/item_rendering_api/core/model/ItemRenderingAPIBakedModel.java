@@ -1,23 +1,17 @@
-package net.vakror.item_rendering_api.core.renderapi;
+package net.vakror.item_rendering_api.core.model;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonObject;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Transformation;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.ItemTransform;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.Material;
 import net.minecraft.world.item.ItemDisplayContext;
-import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.client.RenderTypeGroup;
 import net.vakror.item_rendering_api.core.api.AbstractQuadProcessor;
 import net.vakror.item_rendering_api.core.api.AbstractItemRenderingAPILayer;
 import net.vakror.item_rendering_api.core.api.IItemRenderingAPIModelReader;
-import net.vakror.item_rendering_api.core.api.ItemRenderingAPIQuadRenderData;
 import net.vakror.item_rendering_api.core.base.BakedItemModel;
 
 import java.util.*;
@@ -35,12 +29,12 @@ public class ItemRenderingAPIBakedModel extends BakedItemModel {
 
 	public ItemRenderingAPIBakedModel(
 			List<AbstractItemRenderingAPILayer> layers,
-			IItemRenderingAPIModelReader reader,
-			JsonObject object
-			, Function<Material, TextureAtlasSprite> spriteGetter, TextureAtlasSprite particle
-			, ImmutableMap<ItemDisplayContext, ItemTransform> transformMap
-			, Transformation transformIn, boolean isSideLit) {
-		super(ImmutableList.of(), particle, transformMap, new ItemRenderingAPIOverrideList(spriteGetter, reader.getRequiredItems(object), transformIn), transformIn.isIdentity(), isSideLit);
+			IItemRenderingAPIModelReader reader, JsonObject object,
+			Function<Material, TextureAtlasSprite> spriteGetter, TextureAtlasSprite particle,
+			ImmutableMap<ItemDisplayContext, ItemTransform> transformMap,
+			Transformation transformIn, boolean isSideLit,
+			boolean useAmbientOcclusion, boolean isGui3d) {
+		super(ImmutableList.of(), particle, transformMap, new ItemRenderingAPIOverrideList(spriteGetter, reader.getRequiredItems(object)), transformIn.isIdentity(), isSideLit, useAmbientOcclusion, isGui3d);
 
 		this.layers = layers;
 		this.reader = reader;
@@ -81,19 +75,9 @@ public class ItemRenderingAPIBakedModel extends BakedItemModel {
 		return ImmutableList.copyOf(bakedQuads);
 	}
 
-	@Override
-	public BakedModel applyTransform(ItemDisplayContext type, PoseStack poseStack, boolean applyLeftHandTransform) {
-		return super.applyTransform(type, poseStack, applyLeftHandTransform);
-	}
-
-	@Override
-	public List<RenderType> getRenderTypes(ItemStack itemStack, boolean fabulous) {
-		return super.getRenderTypes(itemStack, fabulous);
-	}
-
 	/* Give a BakedItemModel base on data in this, can use directly to display */
 	public BakedItemModel getNewBakedItemModel(){
-		return new BakedItemModel(this.genQuads(), this.particle, this.transforms, this.overrides, this.transform.isIdentity(), this.isSideLit);
+		return new BakedItemModel(this.genQuads(), this.particle, this.transforms, this.overrides, this.transform.isIdentity(), this.isSideLit, this.useAmbientOcclusion, this.isGui3d);
 	}
 
 	/* Get a combination string of locations, used in cache's key */

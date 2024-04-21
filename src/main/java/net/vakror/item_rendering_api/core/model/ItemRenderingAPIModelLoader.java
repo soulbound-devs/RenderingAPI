@@ -1,4 +1,4 @@
-package net.vakror.item_rendering_api.core.renderapi;
+package net.vakror.item_rendering_api.core.model;
 
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonObject;

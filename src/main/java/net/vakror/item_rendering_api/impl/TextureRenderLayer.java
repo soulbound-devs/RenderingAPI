@@ -8,7 +8,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.vakror.item_rendering_api.core.util.ModelUtils;
 import net.vakror.item_rendering_api.core.api.AbstractItemRenderingAPILayer;
-import net.vakror.item_rendering_api.core.api.ItemRenderingAPIQuadRenderData;
+import net.vakror.item_rendering_api.core.api.data.ItemRenderingAPIQuadRenderData;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Vector4f;
 
@@ -18,6 +18,7 @@ import java.util.List;
 public class TextureRenderLayer extends AbstractItemRenderingAPILayer {
     private final ResourceLocation[] textures;
     private boolean blendQuads = false;
+    private boolean removeInternalQuads = true;
     private int emissivity = -1;
     private int textureSize = 16;
     private Vector4f tint = null;
@@ -30,7 +31,7 @@ public class TextureRenderLayer extends AbstractItemRenderingAPILayer {
     public final void render(List<BakedQuad> quads, Transformation transformation, ItemRenderingAPIQuadRenderData data) {
         List<TextureAtlasSprite> sprites = new ArrayList<>();
         getAdditionalTextures(sprites, data);
-        ModelUtils.genQuads(sprites, quads, transformation, blendQuads, data.spriteGetter(), emissivity, tint, textureSize, true);
+        ModelUtils.genQuads(sprites, quads, transformation, blendQuads, data.spriteGetter(), emissivity, tint, textureSize, removeInternalQuads);
     }
 
     public void getAdditionalTextures(List<TextureAtlasSprite> sprites, ItemRenderingAPIQuadRenderData data) {
@@ -99,6 +100,16 @@ public class TextureRenderLayer extends AbstractItemRenderingAPILayer {
             throw new IllegalArgumentException("Texture size must be a power of two!");
         }
         this.textureSize = textureSize;
+        return this;
+    }
+
+    public TextureRenderLayer showInternalQuads() {
+        this.removeInternalQuads = false;
+        return this;
+    }
+
+    public TextureRenderLayer removeInternalQuads(boolean removeInternalQuads) {
+        this.removeInternalQuads = removeInternalQuads;
         return this;
     }
 }

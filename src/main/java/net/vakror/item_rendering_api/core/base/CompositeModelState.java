@@ -8,6 +8,7 @@ package net.vakror.item_rendering_api.core.base;
 import com.google.common.base.Objects;
 import com.mojang.math.Transformation;
 import net.minecraft.client.resources.model.ModelState;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * An {@link ModelState} that combines the transforms from two child {@link ModelState}.
@@ -37,7 +38,7 @@ public class CompositeModelState implements ModelState
     }
 
     @Override
-    public Transformation getRotation()
+    public @NotNull Transformation getRotation()
     {
         return first.getRotation().compose(second.getRotation());
     }

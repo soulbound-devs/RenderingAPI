@@ -6,6 +6,7 @@ import com.mojang.math.Transformation;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.ItemTransform;
 import net.minecraft.world.item.ItemDisplayContext;
+import net.vakror.item_rendering_api.core.api.data.ItemRenderingAPIQuadRenderData;
 
 import java.util.List;
 

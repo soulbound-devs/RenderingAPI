@@ -2,7 +2,6 @@ package net.vakror.item_rendering_api;
 
 import com.mojang.logging.LogUtils;
 import dev.architectury.event.EventResult;
-import dev.architectury.platform.Platform;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
@@ -10,8 +9,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.neoforge.client.event.ModelEvent;
-import net.neoforged.neoforge.common.NeoForgeMod;
-import net.vakror.item_rendering_api.core.renderapi.ItemRenderingAPIModelLoader;
+import net.vakror.item_rendering_api.core.model.ItemRenderingAPIModelLoader;
 import net.vakror.item_rendering_api.test.TestItems;
 import net.vakror.item_rendering_api.test.extension.TestExtension;
 import net.vakror.registry.jamesregistryapi.api.event.RegistryEvents;

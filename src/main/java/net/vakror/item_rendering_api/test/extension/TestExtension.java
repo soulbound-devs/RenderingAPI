@@ -7,7 +7,7 @@ import net.vakror.item_rendering_api.ItemRenderingAPI;
 import net.vakror.item_rendering_api.core.api.AbstractItemRenderingAPILayer;
 import net.vakror.item_rendering_api.core.api.AbstractQuadProcessor;
 import net.vakror.item_rendering_api.core.api.IItemRenderingAPIModelReader;
-import net.vakror.item_rendering_api.core.api.ItemRenderingAPIQuadRenderData;
+import net.vakror.item_rendering_api.core.api.data.ItemRenderingAPIQuadRenderData;
 import net.vakror.item_rendering_api.core.extension.context.ModelReaderRegistrationContext;
 import net.vakror.item_rendering_api.impl.RemoveDuplicateQuadsProcessor;
 import net.vakror.item_rendering_api.impl.TextureRenderLayer;
@@ -30,7 +30,6 @@ public class TestExtension extends AbstractExtension<ModelReaderRegistrationCont
                         new TextureRenderLayer(
                                 new ResourceLocation(ItemRenderingAPI.MOD_ID ,"item/test"))
                                 .fullBright()
-                                .withTextureSize(16)
                                 .withBlending()
                 );
             }
