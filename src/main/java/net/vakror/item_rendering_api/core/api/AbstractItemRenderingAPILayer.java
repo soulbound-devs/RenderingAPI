@@ -1,9 +1,7 @@
 package net.vakror.item_rendering_api.core.api;
 
-import com.google.common.collect.ImmutableList;
 import com.mojang.math.Transformation;
 import net.minecraft.client.renderer.block.model.BakedQuad;
-import net.minecraft.resources.ResourceLocation;
 import net.vakror.item_rendering_api.core.renderapi.ItemRenderingAPIBakedModel;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
