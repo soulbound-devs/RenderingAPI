@@ -21,7 +21,9 @@ public class ItemRenderingAPIBakedModel extends BakedItemModel {
 	protected final List<AbstractItemRenderingAPILayer> layers;
 
 	private final IItemRenderingAPIModelReader reader;
+	private final List<AbstractQuadProcessor> processors;
 	private final JsonObject object;
+	private final boolean shouldCache;
 
 	private final Transformation transform;
 	/* Cache the result of quads, using a location combination */
@@ -33,14 +35,17 @@ public class ItemRenderingAPIBakedModel extends BakedItemModel {
 			Function<Material, TextureAtlasSprite> spriteGetter, TextureAtlasSprite particle,
 			ImmutableMap<ItemDisplayContext, ItemTransform> transformMap,
 			Transformation transformIn, boolean isSideLit,
-			boolean useAmbientOcclusion, boolean isGui3d) {
+			boolean useAmbientOcclusion, boolean isGui3d,
+			boolean shouldCache) {
 		super(ImmutableList.of(), particle, transformMap, new ItemRenderingAPIOverrideList(spriteGetter, reader.getRequiredItems(object)), transformIn.isIdentity(), isSideLit, useAmbientOcclusion, isGui3d);
 
 		this.layers = layers;
 		this.reader = reader;
+		this.processors = new ArrayList<>();
 		this.object = object;
 
 		this.transform = transformIn;
+		this.shouldCache = shouldCache;
 
 	}
 
@@ -52,11 +57,19 @@ public class ItemRenderingAPIBakedModel extends BakedItemModel {
 	 * @return the quads
 	 */
 	private ImmutableList<BakedQuad> genQuads() {
-		String cacheKey = this.getCacheKeyString();
+		if (!layers.isEmpty() && layers.get(0).data != null) {
+			if (processors.isEmpty()) {
+				processors.addAll(reader.getQuadProcessors(object, layers.get(0).data));
+			}
+		}
 
-		/* Check if this sprite location combination is already baked or not  */
-		if (ItemRenderingAPIBakedModel.cache.containsKey(cacheKey))
-			return ImmutableList.copyOf(ItemRenderingAPIBakedModel.cache.get(cacheKey));
+		String cacheKey = this.getCacheKeyString();
+		if (shouldCache) {
+
+			/* Check if this sprite location combination is already baked or not  */
+			if (ItemRenderingAPIBakedModel.cache.containsKey(cacheKey))
+				return ImmutableList.copyOf(ItemRenderingAPIBakedModel.cache.get(cacheKey));
+		}
 
 		List<BakedQuad> quads = new ArrayList<>();
 
@@ -65,12 +78,14 @@ public class ItemRenderingAPIBakedModel extends BakedItemModel {
 		}
 
 		List<BakedQuad> bakedQuads = new ArrayList<>(quads);
-		if (!layers.isEmpty() && layers.get(0).data != null) {
-			for (AbstractQuadProcessor quadProcessor : reader.getQuadProcessors(object, layers.get(0).data)) {
-				quadProcessor.processQuads(bakedQuads, Collections.unmodifiableList(layers), layers.get(0).data, this.transform, transforms);
-			}
+
+		for (AbstractQuadProcessor quadProcessor : processors) {
+			quadProcessor.processQuads(bakedQuads, Collections.unmodifiableList(layers), layers.get(0).data, this.transform, transforms);
 		}
-		ItemRenderingAPIBakedModel.cache.put(cacheKey, bakedQuads);
+
+		if (shouldCache) {
+			ItemRenderingAPIBakedModel.cache.put(cacheKey, bakedQuads);
+		}
 
 		return ImmutableList.copyOf(bakedQuads);
 	}
@@ -84,7 +99,12 @@ public class ItemRenderingAPIBakedModel extends BakedItemModel {
 	private String getCacheKeyString(){
 		List<String> locations = new ArrayList<>();
 		for (AbstractItemRenderingAPILayer layer : layers) {
-			locations.add(layer.getCacheKey(layer.data));
+			locations.add(layer.getCacheKey(layer.data) + ", ");
+		}
+		for (AbstractQuadProcessor processor : processors) {
+			if (!layers.isEmpty() && layers.get(0).data != null) {
+				locations.add(processor.getCacheKey(layers.get(0).data) + ", ");
+			}
 		}
         return String.join(",", locations);
 	}

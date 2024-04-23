@@ -1,22 +1,30 @@
 package net.vakror.item_rendering_api.core.util;
 
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.datafixers.util.Pair;
 import com.mojang.math.Transformation;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.Material;
+import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.client.model.QuadTransformers;
 import net.vakror.item_rendering_api.ItemRenderingAPI;
 import org.jetbrains.annotations.NotNull;
+import org.joml.Vector2i;
 import org.joml.Vector4f;
+import org.joml.Vector4i;
+
 import static net.vakror.item_rendering_api.core.util.QuadMaker.*;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 public class ModelUtils {
@@ -25,8 +33,9 @@ public class ModelUtils {
 
     /**
      * utility function to get a {@link TextureAtlasSprite} using a sprite getter and a {@link ResourceLocation}
+     *
      * @param spriteGetter the function that maps {@link Material Materials} to {@link TextureAtlasSprite TextureAtlasSprites}
-     * @param location the location of the texture
+     * @param location     the location of the texture
      * @return the {@link TextureAtlasSprite} representing the file
      */
     @Nullable
@@ -41,218 +50,200 @@ public class ModelUtils {
     }
 
     public static void genQuads(List<TextureAtlasSprite> sprites, List<BakedQuad> quads, Transformation transform, Function<Material, TextureAtlasSprite> spriteGetter) {
-        genQuads(sprites, quads, transform, false, spriteGetter, -1, null, 16, true);
+        genQuads(sprites, quads, transform, false, spriteGetter, 16, true);
     }
 
-    public static void genQuads(List<TextureAtlasSprite> sprites, List<BakedQuad> quads, Transformation transform, boolean blendQuads, Function<Material, TextureAtlasSprite> spriteGetter, int emissivity, Vector4f tintColor, int textureSize, boolean removeInternalQuads) {
-        List<BakedQuad> tempQuads = new ArrayList<>();
+    public static void genQuads(List<TextureAtlasSprite> sprites, List<BakedQuad> quads, Transformation transform, boolean blendQuads, Function<Material, TextureAtlasSprite> spriteGetter, int textureSize, boolean removeInternalQuads) {
+        addQuads(getColorMap(sprites, blendQuads, textureSize, removeInternalQuads), quads, transform, spriteGetter, textureSize);
+    }
+
+    private static Multimap<Vector2i, Direction> getPositionsMap(List<TextureAtlasSprite> sprites, int textureSize, boolean removeInternalQuads) {
+        Multimap<Vector2i, Direction> quadPositions;
+        boolean[][] positions = getPositions(sprites, textureSize);
         if (removeInternalQuads) {
-            addExternalQuadsFromSprite(sprites, tempQuads, transform, blendQuads, spriteGetter, emissivity, tintColor, textureSize);
+            quadPositions = getListOfExternalQuads(positions);
         } else {
-            addAllQuadsFromSprite(sprites, tempQuads, transform, blendQuads, spriteGetter, emissivity, tintColor, textureSize);
+            quadPositions = getAllQuads(positions);
         }
-        if (emissivity >= 0 && emissivity <= 15) {
-            QuadTransformers.settingEmissivity(emissivity).processInPlace(tempQuads);
-        }
-        quads.addAll(tempQuads);
+        return quadPositions;
     }
 
-    private static void addAllQuadsFromSprite(List<TextureAtlasSprite> sprites, List<BakedQuad> quads, Transformation transform, boolean blendQuads, Function<Material, TextureAtlasSprite> spriteGetter, int emissivity, Vector4f tintColor, int textureSize) {
-        for (int y = 0; y <= textureSize - 1; y++) {
-            for (int x = 0; x <= textureSize - 1; x++) {
-                Vector4f blendCol = new Vector4f(0.0f, 0.0f, 0.0f, 0.0f);
-                int amountOfSpritesBlended = 0;
-                boolean doStuff = true;
-                for (TextureAtlasSprite sprite : sprites) {
-                    if (doStuff) {
-                        if (sprite == null) return;
-                        if (sprite.contents().isTransparent(0, x, y)) continue;
+    public static Map<Pair<Vector2i, Direction>, Vector4i> getColorMap(List<TextureAtlasSprite> sprites, boolean blendQuads, int textureSize, boolean removeInternalQuads) {
+        Multimap<Vector2i, Direction> quadPositions = getPositionsMap(sprites, textureSize, removeInternalQuads);
+        Map<Pair<Vector2i, Direction>, Vector4i> colors;
 
-                        if (blendQuads) {
-                            blendCol.add(deconstructCol(sprite.getPixelRGBA(0, x, y), sprite.contents().getOriginalImage().format()));
-                            amountOfSpritesBlended++;
-                        } else {
-                            genLeftRightFrontBackLastNotTransparentQuads(sprites, tintColor, x, y, transform, quads, textureSize, new ArrayList<>(), new ArrayList<>());
-                            genUpDownLastNotTransparentQuads(sprites, tintColor, x, y, transform, quads, textureSize, new ArrayList<>(), new ArrayList<>());
-                            doStuff = false;
-                        }
-                        if (blendQuads) {
-                            blendCol.add(deconstructCol(sprite.getPixelRGBA(0, x, y), sprite.contents().getOriginalImage().format()));
-                            amountOfSpritesBlended++;
-                        }
+        if (blendQuads) colors = getBlendedColors(quadPositions, sprites);
+        else colors = getColors(quadPositions, sprites);
+
+        return colors;
+    }
+
+    public static Multimap<Vector2i, Direction> getAllQuads(boolean[][] positions) {
+        int size = positions.length;
+        Multimap<Vector2i, Direction> allPositions = Multimaps.newListMultimap(new HashMap<>(), ArrayList::new);
+        for (int x = 0; x < size - 1; x++) {
+            for (int y = 0; y < size - 1; y++) {
+                if (positions[x][y]) {
+                    for (Direction dir : Direction.values()) {
+                        allPositions.put(new Vector2i(x, y), dir);
                     }
-                }
-
-                if (blendQuads && findLastNotTransparent(x, y, sprites) != null) {
-                    blendCol.div(amountOfSpritesBlended * 255);
-                    genLeftRightFrontBackBlendedQuads(blendCol, quads, transform, x, y, spriteGetter, textureSize, new ArrayList<>(), new ArrayList<>());
-                    genUpDownBlendedQuads(blendCol, quads, transform, x, y, spriteGetter, textureSize, new ArrayList<>(), new ArrayList<>());
                 }
             }
         }
+        return allPositions;
     }
 
-    private static void addExternalQuadsFromSprite(List<TextureAtlasSprite> sprites, List<BakedQuad> quads, Transformation transform, boolean blendQuads, Function<Material, TextureAtlasSprite> spriteGetter, int emissivity, Vector4f tintColor, int textureSize) {
-        for (int y = 0; y <= textureSize - 1; y++) {
-            List<Integer> leftMost = new ArrayList<>();
-            List<Integer> rightMost = new ArrayList<>();
+    public static void addQuads(Map<Pair<Vector2i, Direction>, Vector4i> colors, List<BakedQuad> quads, Transformation transform, Function<Material, TextureAtlasSprite> spriteGetter, int textureSize) {
+        colors.forEach((pair, color) -> {
+            Direction direction = pair.getSecond();
+            TextureAtlasSprite whiteSprite = getSprite(spriteGetter, new ResourceLocation(ItemRenderingAPI.MOD_ID, "item/white"));
+
+            switch (direction) {
+                case NORTH ->
+                        genFrontTextureQuad(whiteSprite, quads, transform, pair.getFirst().x, pair.getFirst().y, color, textureSize);
+                case SOUTH ->
+                        genBackTextureQuad(whiteSprite, quads, transform, pair.getFirst().x, pair.getFirst().y, color, textureSize);
+                case EAST ->
+                        genRightTextureQuad(whiteSprite, quads, transform, pair.getFirst().x, pair.getFirst().y, color, textureSize);
+                case WEST ->
+                        genLeftTextureQuad(whiteSprite, quads, transform, pair.getFirst().x, pair.getFirst().y, color, textureSize);
+                case UP ->
+                        genUpTextureQuad(whiteSprite, quads, transform, pair.getFirst().x, pair.getFirst().y, color, textureSize);
+                case DOWN ->
+                        genDownTextureQuad(whiteSprite, quads, transform, pair.getFirst().x, pair.getFirst().y, color, textureSize);
+            }
+        });
+    }
+
+    public static Map<Pair<Vector2i, Direction>, Vector4i> getColors(Multimap<Vector2i, Direction> quadPositions, List<TextureAtlasSprite> sprites) {
+        Map<Pair<Vector2i, Direction>, Vector4i> colors = new HashMap<>();
+
+        for (Vector2i vector : quadPositions.keySet()) {
+            TextureAtlasSprite sprite = findLastNotTransparent(vector.x, vector.y, sprites);
+            if (sprite != null) {
+                for (Direction direction : quadPositions.get(vector)) {
+                    colors.put(new Pair<>(vector, direction), deconstructCol(sprite.getPixelRGBA(0, vector.x, vector.y), sprite.contents().getOriginalImage().format()));
+                }
+            }
+        }
+
+        return colors;
+    }
+
+    public static Map<Pair<Vector2i, Direction>, Vector4i> getBlendedColors(Multimap<Vector2i, Direction> quadPositions, List<TextureAtlasSprite> sprites) {
+        Map<Pair<Vector2i, Direction>, Vector4i> colors = new HashMap<>();
+
+        for (Vector2i vector2i : quadPositions.keySet()) {
+            Vector4i blendCol;
+            List<Vector4i> cols = new ArrayList<>();
+            for (TextureAtlasSprite sprite : sprites) {
+                if (sprite.contents().isTransparent(0, vector2i.x, vector2i.y)) continue;
+
+                cols.add(deconstructCol(sprite.getPixelRGBA(0, vector2i.x, vector2i.y), sprite.contents().getOriginalImage().format()));
+            }
+
+            if (findLastNotTransparent(vector2i.x, vector2i.y, sprites) != null) {
+                if (cols.size() > 1) {
+                    Vector4i tempCol = new Vector4i();
+                    Vector4i col1 = null;
+                    Vector4i col2 = null;
+                    for (Vector4i col : cols) {
+                        if (col1 != null) {
+                            col2 = col;
+                            col1 = colorBlend(col1.x, col1.y, col1.z, col1.w, col2.x, col2.y, col2.z, col2.w, 0.5);
+                        } else {
+                            col1 = col;
+                        }
+                    }
+                    blendCol = col1;
+                } else {
+                    blendCol = cols.get(0);
+                }
+                for (Direction direction : quadPositions.get(new Vector2i(vector2i.x, vector2i.y))) {
+                    colors.put(new Pair<>(new Vector2i(vector2i.x, vector2i.y), direction), blendCol);
+                }
+            }
+        }
+
+        return colors;
+    }
+
+    public static boolean[][] getPositions(List<TextureAtlasSprite> sprites, int textureSize) {
+        boolean[][] positions = new boolean[textureSize][textureSize];
+        for (int x = 0; x < textureSize - 1; x++) {
+            for (int y = 0; y < textureSize - 1; y++) {
+                if (findLastNotTransparent(x, y, sprites) != null) {
+                    positions[x][y] = true;
+                }
+            }
+        }
+        return positions;
+    }
+
+    public static Multimap<Vector2i, Direction> getListOfExternalQuads(boolean[][] positions) {
+        Multimap<Vector2i, Direction> externalPositions = Multimaps.newListMultimap(new HashMap<>(), ArrayList::new);
+        externalPositions.putAll(getAllLeftRightExternalQuads(positions));
+        externalPositions.putAll(getAllUpDownExternalQuads(positions));
+        return externalPositions;
+    }
+
+    public static Multimap<Vector2i, Direction> getAllUpDownExternalQuads(boolean[][] positions) {
+        int size = positions.length;
+        Multimap<Vector2i, Direction> externalPositions = Multimaps.newListMultimap(new HashMap<>(), ArrayList::new);
+        externalPositions.putAll(getAllLeftRightExternalQuads(positions));
+        for (int x = 0; x <= size - 1; x++) {
 
             boolean hasFoundTransparent = true;
 
-            for (int x = 0; x <= textureSize - 1; x++) {
-                if (findLastNotTransparent(x, y, sprites) != null && hasFoundTransparent) {
-                    leftMost.add(x);
-                    hasFoundTransparent = false;
-                }
-                if (findLastNotTransparent(x, y, sprites) == null) {
+            for (int y = 0; y <= size - 1; y++) {
+                if (positions[x][y]) {
+                    if (hasFoundTransparent) {
+                        externalPositions.put(new Vector2i(x, y), Direction.UP);
+                        hasFoundTransparent = false;
+                    }
+                } else {
                     if (!hasFoundTransparent) {
-                        rightMost.add(x - 1);
+                        externalPositions.put(new Vector2i(x, y - 1), Direction.DOWN);
                     }
                     hasFoundTransparent = true;
                 }
             }
-
-            for (int x = 0; x <= textureSize - 1; x++) {
-                Vector4f blendCol = new Vector4f(0.0f, 0.0f, 0.0f, 0.0f);
-                int amountOfSpritesBlended = 0;
-                boolean doStuff = true;
-                for (TextureAtlasSprite sprite : sprites) {
-                    if (doStuff) {
-                        if (sprite == null) return;
-                        if (sprite.contents().isTransparent(0, x, y)) continue;
-
-                        if (blendQuads) {
-                            blendCol.add(deconstructCol(sprite.getPixelRGBA(0, x, y), sprite.contents().getOriginalImage().format()));
-                            amountOfSpritesBlended++;
-                        } else {
-                            genLeftRightFrontBackLastNotTransparentQuads(sprites, tintColor, x, y, transform, quads, textureSize, leftMost, rightMost);
-                            doStuff = false;
-                        }
-                    }
-                }
-
-                if (blendQuads && findLastNotTransparent(x, y, sprites) != null) {
-                    blendCol.div(amountOfSpritesBlended * 255);
-                    genLeftRightFrontBackBlendedQuads(blendCol, quads, transform, x, y, spriteGetter, textureSize, leftMost, rightMost);
-                }
-            }
         }
+        return externalPositions;
+    }
 
-        for (int x = 0; x <= textureSize - 1; x++) {
-            List<Integer> topMost = new ArrayList<>();
-            List<Integer> bottomMost = new ArrayList<>();
+    public static Multimap<? extends Vector2i, Direction> getAllLeftRightExternalQuads(boolean[][] positions) {
+        int size = positions.length;
+        Multimap<Vector2i, Direction> externalPositions = Multimaps.newListMultimap(new HashMap<>(), ArrayList::new);
+        for (int y = 0; y <= size - 1; y++) {
 
             boolean hasFoundTransparent = true;
 
-            for (int y = 0; y <= textureSize - 1; y++) {
-                if (findLastNotTransparent(x, y, sprites) != null && hasFoundTransparent) {
-                    topMost.add(y);
-                    hasFoundTransparent = false;
-                }
-                if (findLastNotTransparent(x, y, sprites) == null) {
+            for (int x = 0; x <= size - 1; x++) {
+                if (positions[x][y]) {
+                    externalPositions.put(new Vector2i(x, y), Direction.NORTH);
+                    externalPositions.put(new Vector2i(x, y), Direction.SOUTH);
+                    if (hasFoundTransparent) {
+                        externalPositions.put(new Vector2i(x, y), Direction.WEST);
+                        hasFoundTransparent = false;
+                    }
+                } else {
                     if (!hasFoundTransparent) {
-                        bottomMost.add(y - 1);
+                        externalPositions.put(new Vector2i(x - 1, y), Direction.EAST);
                     }
                     hasFoundTransparent = true;
                 }
             }
-            for (int y = 0; y <= textureSize - 1; y++) {
-                Vector4f blendCol = new Vector4f(0.0f, 0.0f, 0.0f, 0.0f);
-                int amountOfSpritesBlended = 0;
-                boolean doStuff = true;
-                for (TextureAtlasSprite sprite : sprites) {
-                    if (doStuff) {
-                        if (sprite == null) return;
-                        if (sprite.contents().isTransparent(0, x, y)) continue;
-
-                        if (blendQuads) {
-                            blendCol.add(deconstructCol(sprite.getPixelRGBA(0, x, y), sprite.contents().getOriginalImage().format()));
-                            amountOfSpritesBlended++;
-                        } else {
-                            genUpDownLastNotTransparentQuads(sprites, tintColor, x, y, transform, quads, textureSize, topMost, bottomMost);
-                            doStuff = false;
-                        }
-                    }
-                }
-
-                if (blendQuads && findLastNotTransparent(x, y, sprites) != null) {
-                    blendCol.div(amountOfSpritesBlended * 255);
-                    genUpDownBlendedQuads(blendCol, quads, transform, x, y, spriteGetter, textureSize, topMost, bottomMost);
-                }
-            }
         }
+        return externalPositions;
     }
 
-    public static void genLeftRightFrontBackBlendedQuads(Vector4f blendCol, List<BakedQuad> quads, Transformation transform, int x, int y, Function<Material, TextureAtlasSprite> spriteGetter, int textureSize, List<Integer> leftMost, List<Integer> rightMost) {
-        TextureAtlasSprite white = getSprite(spriteGetter, new ResourceLocation(ItemRenderingAPI.MOD_ID, "item/white"));
-        genFrontBackTextureQuad(white, quads, transform, x, y, blendCol, textureSize);
-
-        if (leftMost.isEmpty() && rightMost.isEmpty()) {
-            genLeftTextureQuad(white, quads, transform, x, y, blendCol, textureSize);
-            genRightTextureQuad(white, quads, transform, x, y, blendCol, textureSize);
-        }
-
-        if (leftMost.contains(x)) {
-            genLeftTextureQuad(white, quads, transform, x, y, blendCol, textureSize);
-        } if (rightMost.contains(x)) {
-            genRightTextureQuad(white, quads, transform, x, y, blendCol, textureSize);
-        }
-    }
-
-
-    public static void genLeftRightFrontBackLastNotTransparentQuads(List<TextureAtlasSprite> sprites, Vector4f tintColor, int x, int y, Transformation transform, List<BakedQuad> quads, int textureSize, List<Integer> leftMost, List<Integer> rightMost) {
-        TextureAtlasSprite sprite = findLastNotTransparent(x, y, sprites);
-        genFrontBackTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor, textureSize);
-
-        if (leftMost.isEmpty() && rightMost.isEmpty()) {
-            genLeftTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor, textureSize);
-            genRightTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor, textureSize);
-        }
-
-        if (leftMost.contains(x)) {
-            genLeftTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor, textureSize);
-        } if (rightMost.contains(x)) {
-            genRightTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor, textureSize);
-        }
-    }
-
-    public static void genUpDownBlendedQuads(Vector4f blendCol, List<BakedQuad> quads, Transformation transform, int x, int y, Function<Material, TextureAtlasSprite> spriteGetter, int textureSize, List<Integer> topMost, List<Integer> bottomMost) {
-        TextureAtlasSprite white = getSprite(spriteGetter, new ResourceLocation(ItemRenderingAPI.MOD_ID, "item/white"));
-
-        if (topMost.isEmpty() && bottomMost.isEmpty()) {
-            genUpTextureQuad(white, quads, transform, x, y, blendCol, textureSize);
-            genDownTextureQuad(white, quads, transform, x, y, blendCol, textureSize);
-        }
-
-        if (topMost.contains(y)) {
-            genUpTextureQuad(white, quads, transform, x, y, blendCol, textureSize);
-        } if (bottomMost.contains(y)) {
-            genDownTextureQuad(white, quads, transform, x, y, blendCol, textureSize);
-        }
-    }
-
-
-    public static void genUpDownLastNotTransparentQuads(List<TextureAtlasSprite> sprites, Vector4f tintColor, int x, int y, Transformation transform, List<BakedQuad> quads, int textureSize, List<Integer> topMost, List<Integer> bottomMost) {
-        TextureAtlasSprite sprite = findLastNotTransparent(x, y, sprites);
-
-        if (topMost.isEmpty() && bottomMost.isEmpty()) {
-            genUpTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor, textureSize);
-            genDownTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor, textureSize);
-        }
-
-        if (topMost.contains(y)) {
-            genUpTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor, textureSize);
-        } if (bottomMost.contains(y)) {
-            genDownTextureQuad(sprite, quads, transform, x, y, tintColor == null ? new Vector4f(1.0f, 1.0f, 1.0f, 1.0f): tintColor, textureSize);
-        }
-    }
-
-    private static Vector4f deconstructCol(int color, NativeImage.Format format) {
+    public static Vector4i deconstructCol(int color, NativeImage.Format format) {
         int a = (color >> format.alphaOffset()) & 0xff; // or color >>> 24
         int r = (color >> format.redOffset()) & 0xff;
         int g = (color >> format.greenOffset()) & 0xff;
         int b = (color >> format.blueOffset()) & 0xff;
-        return new Vector4f(r, g, b, a);
+        return new Vector4i(r, g, b, a);
     }
 
     @Nullable
@@ -269,5 +260,53 @@ public class ModelUtils {
 
     public static boolean isPowerOfTwo(int x) {
         return x != 0 && ((x & (x - 1)) == 0);
+    }
+
+    /**
+     * @param ratio a number between 0-1 that determines how the colors are mixed. 0 means only color 2, while 1 means only color 1. Any range between 0 and 1 is acceptable
+     */
+    public static Vector4i colorBlend(int r1, int g1, int b1, int a1, int r2, int g2, int b2, int a2, double ratio) {
+        int r = (int) Math.round((r1 * (1 - ratio)) + (r2 * ratio));
+        int g = (int) Math.round((g1 * (1 - ratio)) + (g2 * ratio));
+        int b = (int) Math.round((b1 * (1 - ratio)) + (b2 * ratio));
+        int a = (int) Math.round((a1 * (1 - ratio)) + (a2 * ratio));
+
+        // Clamp values to stay within 0-255 range
+        r = Math.max(0, Math.min(255, r));
+        g = Math.max(0, Math.min(255, g));
+        b = Math.max(0, Math.min(255, b));
+        a = Math.max(0, Math.min(255, a));
+
+        return new Vector4i(r, g, b, a);
+    }
+
+    public static Vector4i blend(double ratio, Vector4i... colors) {
+        if (ratio < 0 || ratio > 1) {
+            throw new IllegalArgumentException("Ratio must be between 0 and 1");
+        }
+
+        if (colors.length < 2) {
+            throw new IllegalArgumentException("At least two colors must be provided");
+        }
+
+        // Initialize accumulator for blended color
+        Vector4i result = new Vector4i(0, 0, 0, 0);
+
+        // Iterate through colors and accumulate weighted components
+        for (Vector4i color : colors) {
+            double weight = (color == colors[colors.length - 1]) ? ratio : (1 - ratio) / (colors.length - 1);
+            result.x += (int) Math.round(color.x * weight);
+            result.y += (int) Math.round(color.y * weight);
+            result.z += (int) Math.round(color.z * weight);
+            result.w += (int) Math.round(color.w * weight);
+        }
+
+        // Clamp values to stay within 0-255 range
+        result.x = Math.max(0, Math.min(255, result.x));
+        result.y = Math.max(0, Math.min(255, result.y));
+        result.z = Math.max(0, Math.min(255, result.z));
+        result.w = Math.max(0, Math.min(255, result.w));
+
+        return result;
     }
 }

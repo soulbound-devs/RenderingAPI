@@ -52,7 +52,7 @@ public class ItemRenderingAPIModel implements IUnbakedGeometry<ItemRenderingAPIM
 		ExtraModelData data = reader.getExtraData(object, owner, bakery, spriteGetter, modelTransform, modelLocation, getTransforms(owner), transform);
 
 		/* Vanilla'd BakedItemModel but with custom Override List, used in store data, it'll display nothing */
-		return new ItemRenderingAPIBakedModel(layers, reader, object, spriteGetter, data.particle(), data.transformMap(), data.transform(), data.useBlockLight(), data.useAmbientOcclusion(), data.isGui3d());
+		return new ItemRenderingAPIBakedModel(layers, reader, object, spriteGetter, data.particle(), data.transformMap(), data.transform(), data.useBlockLight(), data.useAmbientOcclusion(), data.isGui3d(), reader.shouldCache(object, owner));
 	}
 
 	public static ImmutableMap<ItemDisplayContext, ItemTransform> getTransforms(IGeometryBakingContext owner)

@@ -19,9 +19,7 @@ public class TextureRenderLayer extends AbstractItemRenderingAPILayer {
     private final ResourceLocation[] textures;
     private boolean blendQuads = false;
     private boolean removeInternalQuads = true;
-    private int emissivity = -1;
     private int textureSize = 16;
-    private Vector4f tint = null;
 
     public TextureRenderLayer(ResourceLocation... textures) {
         this.textures = textures;
@@ -31,7 +29,7 @@ public class TextureRenderLayer extends AbstractItemRenderingAPILayer {
     public final void render(List<BakedQuad> quads, Transformation transformation, ItemRenderingAPIQuadRenderData data) {
         List<TextureAtlasSprite> sprites = new ArrayList<>();
         getAdditionalTextures(sprites, data);
-        ModelUtils.genQuads(sprites, quads, transformation, blendQuads, data.spriteGetter(), emissivity, tint, textureSize, removeInternalQuads);
+        ModelUtils.genQuads(sprites, quads, transformation, blendQuads, data.spriteGetter(), textureSize, removeInternalQuads);
     }
 
     public void getAdditionalTextures(List<TextureAtlasSprite> sprites, ItemRenderingAPIQuadRenderData data) {
@@ -69,29 +67,6 @@ public class TextureRenderLayer extends AbstractItemRenderingAPILayer {
 
     public TextureRenderLayer withBlending() {
         this.blendQuads = true;
-        return this;
-    }
-
-    public TextureRenderLayer withEmissivity(int emissivity) {
-        if (emissivity < 0 || emissivity > 15) {
-            throw new IllegalArgumentException("Emissivity must be between 0 and 15!");
-        }
-        this.emissivity = emissivity;
-        return this;
-    }
-
-    public TextureRenderLayer fullBright() {
-        this.emissivity = 15;
-        return this;
-    }
-
-    public TextureRenderLayer withTint() {
-        this.tint = null;
-        return this;
-    }
-
-    public TextureRenderLayer withTint(Vector4f tint) {
-        this.tint = tint;
         return this;
     }
 

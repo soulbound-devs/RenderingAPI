@@ -28,8 +28,7 @@ public class TestExtension extends AbstractExtension<ModelReaderRegistrationCont
             public List<AbstractItemRenderingAPILayer> getLayers(JsonObject object) {
                 return List.of(
                         new TextureRenderLayer(
-                                new ResourceLocation(ItemRenderingAPI.MOD_ID ,"item/test"))
-                                .fullBright()
+                                new ResourceLocation(ItemRenderingAPI.MOD_ID ,"item/r"), new ResourceLocation(ItemRenderingAPI.MOD_ID ,"item/g"), new ResourceLocation(ItemRenderingAPI.MOD_ID ,"item/b"))
                                 .withBlending()
                 );
             }

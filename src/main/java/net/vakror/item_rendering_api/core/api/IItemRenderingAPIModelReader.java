@@ -82,4 +82,8 @@ public interface IItemRenderingAPIModelReader {
         TextureAtlasSprite particle = spriteGetter.apply(owner.getMaterial("particle"));
         return new ExtraModelData(particle, oldTransforms, transform, false, true, false);
     }
+
+    default boolean shouldCache(JsonObject object, IGeometryBakingContext owner) {
+        return true;
+    }
 }

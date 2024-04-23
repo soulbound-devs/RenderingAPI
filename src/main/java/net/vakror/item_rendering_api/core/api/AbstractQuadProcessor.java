@@ -24,4 +24,6 @@ public abstract class AbstractQuadProcessor {
      * @param data extra data to process the quads with
      */
     public abstract void processQuads(List<BakedQuad> bakedQuads, List<AbstractItemRenderingAPILayer> layers, ItemRenderingAPIQuadRenderData data, Transformation transform, ImmutableMap<ItemDisplayContext, ItemTransform> itemTransforms);
+
+    public abstract String getCacheKey(ItemRenderingAPIQuadRenderData data);
 }
